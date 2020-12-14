@@ -7,6 +7,7 @@ services:
     container_name: bhxiv-app
     volumes:
       - ${PWD}/tmp:/tmp
+      - ${PWD}/log:/app/log
     ports:
       - 9292:9292
     restart: always
