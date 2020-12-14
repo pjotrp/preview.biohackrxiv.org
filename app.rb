@@ -49,11 +49,6 @@ class BHXIV < Sinatra::Base
     end
   end
 
-  configure do
-    set :biohackathons, BHXIVUtils::PaperList.biohackathon_events
-    set :papers, Hash[settings.biohackathons.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
-  end
-
   get '/' do
     slim :index
   end
@@ -83,8 +78,8 @@ class BHXIV < Sinatra::Base
   end
 
   get '/list' do
-    @biohackathons = settings.biohackathons
-    @papers = settings.papers
+    @biohackathons = BHXIVUtils::PaperList.biohackathon_events
+    @papers = Hash[@biohackathons.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
     slim :list
   end
 end
