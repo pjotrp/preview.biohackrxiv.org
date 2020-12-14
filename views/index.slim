@@ -1,0 +1,95 @@
+html[lang="en"]
+  head
+    title
+      | BioHackrXiv preview service
+    link[rel="stylesheet" href="https://pages-themes.github.io/minimal/assets/css/style.css" type="text/css"]
+    style
+      |  footer { display: none; }
+  body
+    .wrapper
+      header
+        h1
+          a[href="http://preview.biohackrxiv.org/"]
+            | preview.biohackrxiv.org
+        p
+          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences
+        p.view
+          a[href="https://github.com/biohackrxiv"]
+            | View My GitHub Profile
+      section
+        h1
+          | BioHackrXiv preview service
+        div
+          p
+            img[src="https://guide.biohackrxiv.org/assets/logo/BioHackrXiv-logo-transparent-340x140.png" alt="BioHackrXiv logo"]
+        div
+          p
+            a[href="https://biohackrxiv.org"]
+              | BioHackrXiv&nbsp;
+            | currently accepts only the manuscripts in PDF format compiled by the&nbsp;
+            a[href="https://github.com/biohackrxiv/bhxiv-gen-pdf/"]
+              | BioHackrXiv PDF Generator
+            | . This website provides the online PDF converter which processes a Markdown format file &nbsp;
+            code
+              | paper.md&nbsp;
+            | and a BibTeX format file&nbsp;
+            code
+              | paper.bib
+            |  in the given git repository. You can also upload your files in a zip archive. Visit&nbsp;
+            a[href="https://guide.biohackrxiv.org"]
+              | journal guidelines&nbsp;
+            | for more information on manuscript preparation.
+          p
+        div
+          form#preview-form[action="gen-pdf" accept-charset="UTF-8" method="POST" enctype="multipart/form-data"]
+            p
+              |  Repository:
+              input#repository[name="repository" size="80"]
+              |  Try with:&nbsp;
+              a[href="https://github.com/biohackrxiv/bhxiv-gen-pdf"]
+                | https://github.com/biohackrxiv/bhxiv-gen-pdf
+            p
+              |  or upload a zip file of your repository:&nbsp;&nbsp;
+              input[type="file" name="zipfile"]
+            label[for="journal"]
+              |  Compile paper for:
+            div
+              radio-group
+                div
+                  radio
+                    input[type="radio" name="journal" value="Japan2018"]
+                    |  NBDC/DBCLS BioHackathon, Matsue, Japan, 2018
+                div
+                  radio
+                    input[type="radio" name="journal" value="Japan2019"]
+                    |  NBDC/DBCLS BioHackathon, Fukuoka, Japan, 2019
+                div
+                  radio
+                    input[type="radio" name="journal" value="France2019"]
+                    |  BioHackathon EUROPE, Paris, France, 2019
+                div
+                  radio
+                    input[type="radio" name="journal" value="Covid2020"]
+                    |  Virtual BioHackathon Covid-2020
+                div
+                  radio
+                    input[type="radio" name="journal" value="BCC2020"]
+                    |  Bioinformatics Community Conference 2020 CollaborationFest (CoFest)
+                div
+                  radio
+                    input[type="radio" name="journal" value="BH20EU" checked="1"]
+                    |  BioHackathon Europe 2020 Online
+
+            p
+              div
+                input[type="submit" name="commit" value="Convert"]
+            p
+              | Have an issue?&nbsp;
+              a[href="mailto:biohackrxiv@googlegroups.com"]
+                | Contact us
+      footer
+        p
+          small
+            | Hosted on GitHub Pages — Theme by
+            a[href="https://github.com/orderedlist"]
+              | orderedlist

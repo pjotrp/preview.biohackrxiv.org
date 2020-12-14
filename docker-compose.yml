@@ -1,0 +1,22 @@
+version: "3"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: dockerfile.app
+    container_name: bhxiv-app
+    volumes:
+      - ${PWD}/tmp:/tmp
+    ports:
+      - 9292:9292
+    restart: always
+  proxy:
+    image: nginx:1.17
+    container_name: bhxiv-proxy
+    depends_on:
+      - app
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    restart: always
