@@ -24,26 +24,28 @@ html[lang="en"]
             img[src="https://guide.biohackrxiv.org/assets/logo/BioHackrXiv-logo-transparent-340x140.png" alt="BioHackrXiv logo"]
         div
           p
-            a[href="https://biohackrxiv.org"]
-              | BioHackrXiv&nbsp;
-            | currently accepts only the manuscripts in PDF format compiled by the&nbsp;
-            a[href="https://github.com/biohackrxiv/bhxiv-gen-pdf/"]
-              | BioHackrXiv PDF Generator
-            | . This website provides the online PDF converter which processes a Markdown format file &nbsp;
-            code
-              | paper.md&nbsp;
-            | and a BibTeX format file&nbsp;
-            code
+            a<> href="https://biohackrxiv.org" BioHackrXiv
+            | currently accepts only the manuscripts from selected events and in PDF format compiled by the
+            a<> href="https://github.com/biohackrxiv/bhxiv-gen-pdf/" BioHackrXiv PDF Generator
+            | . This website provides the online PDF converter which processes a Markdown format file
+            code<>
+              | paper.md
+            | and a BibTeX format file
+            code<>
               | paper.bib
-            |  in the given git repository. You can also upload your files in a zip archive. Visit&nbsp;
-            a[href="https://guide.biohackrxiv.org"]
-              | journal guidelines&nbsp;
-            | for more information on manuscript preparation.
+            | in the given git repository. You can also upload your files in a zip archive.
+          p
+            | Visit
+            a<> href="https://guide.biohackrxiv.org" journal guidelines
+            | for more information on manuscript preparation. The list of papers already published is
+            a<> href="/list" here
+            | .
+
           p
         div
           form#preview-form[action="gen-pdf" accept-charset="UTF-8" method="POST" enctype="multipart/form-data"]
             p
-              |  Repository:
+              | Git repository URL:
               input#repository[name="repository" size="80"]
               |  Try with:&nbsp;
               a[href="https://github.com/biohackrxiv/bhxiv-gen-pdf"]
