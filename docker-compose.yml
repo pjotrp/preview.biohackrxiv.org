@@ -8,6 +8,7 @@ services:
     volumes:
       - ${PWD}/tmp:/tmp
       - ${PWD}/log:/app/log
+      - ${PWD}/public/papers:/app/public/papers
     ports:
       - 9292:9292
     restart: always
