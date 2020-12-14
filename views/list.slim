@@ -1,0 +1,49 @@
+html[lang="en"]
+  head
+    title
+      | BioHackrXiv list of papers
+    link[rel="stylesheet" href="https://pages-themes.github.io/minimal/assets/css/style.css" type="text/css"]
+    style
+      |  footer { display: none; }
+  body
+    .wrapper
+      header
+        h1
+          a[href="http://preview.biohackrxiv.org/"]
+            | preview.biohackrxiv.org
+        p
+          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences
+        p.view
+          a[href="https://github.com/biohackrxiv"]
+            | View My GitHub Profile
+      section
+        div
+          h1
+            | BioHackrXiv list of papers
+          p
+            img[src="https://guide.biohackrxiv.org/assets/logo/BioHackrXiv-logo-transparent-340x140.png" alt="BioHackrXiv logo"]
+        div
+          - @biohackathons.each_pair do |name, info|
+            - if !@papers[name].empty?
+              hr
+              section
+                h2
+                  | Papers for
+                  a<> href="#{info[:url]}"
+                    = info[:descr]
+                ol
+                  - @papers[name].each.with_index do |paper, i|
+                    - if i != 0
+                      hr
+                    h3
+                      a<> href="#{paper.url}"
+                        = paper.title
+                    p
+                      == paper.authors.join(", ")
+
+      footer
+        p
+          small
+            | Hosted on GitHub Pages — Theme by
+            a[href="https://github.com/orderedlist"]
+              | orderedlist

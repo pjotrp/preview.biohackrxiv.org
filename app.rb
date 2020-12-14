@@ -1,6 +1,9 @@
+$LOAD_PATH << __dir__
+
 require 'sinatra'
 require 'slim'
 require 'securerandom'
+require 'lib/list'
 
 configure {
   set :server, :puma
@@ -46,6 +49,11 @@ class BHXIV < Sinatra::Base
     end
   end
 
+  configure do
+    set :biohackathons, BHXIVUtils::PaperList.biohackathon_events
+    set :papers, Hash[settings.biohackathons.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
+  end
+
   get '/' do
     slim :index
   end
@@ -72,5 +80,11 @@ class BHXIV < Sinatra::Base
     else
       status 500
     end
+  end
+
+  get '/list' do
+    @biohackathons = settings.biohackathons
+    @papers = settings.papers
+    slim :list
   end
 end
