@@ -1,9 +1,10 @@
-# Web-server in Ruby/Sinatra/Puma/Nginx on Docker-compose
+# Webapp in Ruby/Sinatra/Puma/Nginx for preview.biohackrxiv.org
 
 For testing:
 
 ```
-$ cd bhxiv-gen-pdf/web-rb
+$ git clone https://github.com/biohackrxiv/preview.biohackrxiv.org
+$ cd preview.biohackrxiv.org
 $ docker-compose up --build
 ```
 
