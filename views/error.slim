@@ -1,0 +1,42 @@
+html[lang="en"]
+  head
+    title
+      | BioHackrXiv preview service
+    link[rel="stylesheet" href="https://pages-themes.github.io/minimal/assets/css/style.css" type="text/css"]
+    style
+      |  footer { display: none; }
+  body
+    .wrapper
+      header
+        h1
+          a[href="http://preview.biohackrxiv.org/"]
+            | preview.biohackrxiv.org
+        p
+          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences
+        p.view
+          a[href="https://github.com/biohackrxiv"]
+            | View My GitHub Profile
+      section
+        h1
+          | BioHackrXiv preview service
+        div
+          p
+            img[src="https://guide.biohackrxiv.org/assets/logo/BioHackrXiv-logo-transparent-340x140.png" alt="BioHackrXiv logo"]
+      section
+        div
+            p
+              | We are sorry, generating your document shows the following error
+            pre
+              | #{@error_msg}
+            p
+              | Please attempt to fix the problem and try again!
+            p
+              | Need more help?&nbsp;
+              a[href="mailto:biohackrxiv@googlegroups.com"]
+                | Contact us
+      footer
+        p
+          small
+            | Hosted on GitHub Pages — Theme by
+            a[href="https://github.com/orderedlist"]
+              | orderedlist

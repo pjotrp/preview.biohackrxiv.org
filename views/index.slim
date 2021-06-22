@@ -33,19 +33,17 @@ html[lang="en"]
             | and a BibTeX format file
             code<>
               | paper.bib
-            | in the given git repository. You can also upload your files in a zip archive.
-          p
-            | Visit
+            | in the given git repository. You can also upload your files in a zip archive. Visit
             a<> href="https://guide.biohackrxiv.org" journal guidelines
-            | for more information on manuscript preparation. The list of papers already published is
+            | for more information on manuscript preparation.
+          p
+            | The list of published papers is
             a<> href="/list" here
             | .
-
-          p
         div
           form#preview-form[action="gen-pdf" accept-charset="UTF-8" method="POST" enctype="multipart/form-data"]
             p
-              | Git repository URL:
+              |  Repository:
               input#repository[name="repository" size="80"]
               |  Try with:&nbsp;
               a[href="https://github.com/biohackrxiv/bhxiv-gen-pdf"]
@@ -81,6 +79,10 @@ html[lang="en"]
                   radio
                     input[type="radio" name="journal" value="BH20EU" checked="1"]
                     |  BioHackathon Europe 2020 Online
+                div
+                  radio
+                    input[type="radio" name="journal" value="Other"]
+                    |  Other Open Source BioHackathon
 
             p
               div

@@ -4,10 +4,31 @@ require 'sinatra'
 require 'slim'
 require 'securerandom'
 require 'lib/list'
+require 'logger'
+
+$logger = Logger.new(STDOUT)
+$logger.level = Logger::DEBUG
 
 configure {
   set :server, :puma
+  set :show_exceptions, true
+  set :environment, :development
+  set :logging, :true
 }
+
+class CommandError < StandardError
+end
+
+def system_log(cmd)
+  $logger.debug("Invoking: #{cmd}\n")
+  result = `#{cmd} 2>&1`
+  status = $?.exitstatus
+  result2 = result.force_encoding('utf-8')
+  $logger.debug(result2)
+  if status!=0
+    raise CommandError, "Failed to run command: "+result2
+  end
+end
 
 class BHXIV < Sinatra::Base
   set :public_folder, 'public'
@@ -22,12 +43,12 @@ class BHXIV < Sinatra::Base
     def stage_zipfile(id, zipfile)
       workdir = create_workdir(id)
       filepath = zipfile[:tempfile].path
-      system("unzip #{filepath} -d #{workdir}")
+      system_log("unzip #{filepath} -d #{workdir}")
     end
 
     def stage_gitrepo(id, git_url)
       workdir = create_workdir(id)
-      system("git clone #{git_url} #{workdir}/#{File.basename(git_url)}")
+      system_log("git clone -c core.askPass=echo #{git_url} #{workdir}/#{File.basename(git_url)}")
     end
 
     def create_outdir(id)
@@ -38,23 +59,41 @@ class BHXIV < Sinatra::Base
 
     def gen_pdf(id, journal)
       # Find paper.md
-      paper_dir = File.dirname(Dir.glob("/tmp/#{id}/**/paper.md").first)
+      glob = "/tmp/#{id}/**/paper.md"
+      $logger.debug(glob)
+      files = Dir.glob(glob)
+      if files.size < 1
+        raise CommandError, "Can not find a paper.md in directory structure!"
+      end
+      paper_dir = File.dirname(files.first)
       # Prepare output dir
       outdir = create_outdir(id)
       pdf_path = "#{outdir}/paper.pdf"
       # Generate
-      system("ruby /gen-pdf/bin/gen-pdf #{paper_dir} #{journal} #{pdf_path}")
-      # Return pdf_path
+      system_log("ruby ../bin/gen-pdf #{paper_dir} #{journal} #{pdf_path}")
+      # Return pdf_path      "/papers/#{id}/paper.pdf"
       "/papers/#{id}/paper.pdf"
     end
   end
 
+  error CommandError do
+    # 'Sorry there was a nasty error - ' + env['sinatra.error'].message
+    @error_msg = env['sinatra.error'].message
+    slim :error
+  end
+
+  error do
+    'Server error: ' + env['sinatra.error'].message
+  end
+
   get '/' do
+    # raise CommandError, "TESTING ERRORS!\nHello"
     slim :index
   end
 
   post '/gen-pdf' do
     # Get form parameters
+    $logger.debug(params)
     journal = params[:journal]
     git_url = params[:repository]
     zipfile = params[:zipfile]
