@@ -70,7 +70,7 @@ class BHXIV < Sinatra::Base
       outdir = create_outdir(id)
       pdf_path = "#{outdir}/paper.pdf"
       # Generate
-      system_log("ruby ../bin/gen-pdf #{paper_dir} #{journal} #{pdf_path}")
+      system_log("gen-pdf #{paper_dir} #{journal} #{pdf_path}")
       # Return pdf_path      "/papers/#{id}/paper.pdf"
       "/papers/#{id}/paper.pdf"
     end
