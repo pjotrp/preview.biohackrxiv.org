@@ -10,7 +10,7 @@ RUN apt-get update -y && \
       texlive-bibtex-extra=2018.20190227-2
 WORKDIR /
 RUN git clone "https://github.com/inutano/bhxiv-gen-pdf" --depth 1 && chmod +x /bhxiv-gen-pdf/bin/gen-pdf
-ENV PATH $PATH:/gen-pdf/bin
+ENV PATH $PATH:/bhxiv-gen-pdf/bin
 COPY . /app/
 WORKDIR /app
 RUN bundle install
