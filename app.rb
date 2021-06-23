@@ -48,7 +48,7 @@ class BHXIV < Sinatra::Base
 
     def stage_gitrepo(id, git_url)
       workdir = create_workdir(id)
-      system_log("git clone -c core.askPass=echo #{git_url} #{workdir}/#{File.basename(git_url)}")
+      system_log("git clone --depth 1 -c core.askPass=echo #{git_url} #{workdir}/#{File.basename(git_url)}")
     end
 
     def create_outdir(id)
