@@ -9,11 +9,16 @@
 #
 #   export PATH=~/opt/guix/bin:$PATH
 #   export GUIX_PACKAGE_PATH=$HOME/guix-update-channel
+# 
+# before running below. 
 #
 # The setup assumes the bhxiv-gen-pdf repository is checked out one directory level
 # down (see $generator below)
 
-echo "When in the container type:"
+echo "# When in the container type:"
+echo "mkdir /usr/bin -p"
+echo "ln -s \$GUIX_ENVIRONMENT/bin/env /usr/bin/env"
+echo "env PATH=/bhxiv-gen-pdf/bin:\$PATH puma -t 1 -e development"
 echo "puma -t 1 -e development"
 
 generator=$(dirname $(pwd))/bhxiv-gen-pdf
