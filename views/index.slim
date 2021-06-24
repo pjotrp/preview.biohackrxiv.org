@@ -12,6 +12,10 @@ html[lang="en"]
           a<> href="http://preview.biohackrxiv.org/" preview.biohackrxiv.org
         p
           | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences
+        p
+          | List of
+          a<> href="/list" published papers
+          | .
         p.view
           a<> href="https://github.com/biohackrxiv" View My GitHub Profile
       section
@@ -35,10 +39,6 @@ html[lang="en"]
             | in the given git repository. You can also upload your files in a zip archive. Visit
             a<> href="https://guide.biohackrxiv.org" journal guidelines
             | for more information on manuscript preparation.
-          p
-            | The list of published papers is
-            a<> href="/list" here
-            | .
         div
           form#preview-form[action="gen-pdf" accept-charset="UTF-8" method="POST" enctype="multipart/form-data"]
             p
@@ -86,6 +86,10 @@ html[lang="en"]
             p
               div
                 input[type="submit" name="commit" value="Convert"]
+            p
+              | See also the list of
+              a<> href="/list" published papers
+              | .
             p
               | Have an issue?&nbsp;
               a[href="mailto:biohackrxiv@googlegroups.com"]
