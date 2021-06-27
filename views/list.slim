@@ -38,6 +38,9 @@ html[lang="en"]
                     h3
                       a<> href="#{paper.url}"
                         = paper.title
+                        | &nbsp;(
+                        = paper.date
+                        | )
                     p
                       == paper.authors.join(", ")
 

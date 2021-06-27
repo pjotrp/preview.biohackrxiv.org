@@ -70,13 +70,14 @@ module BHXIVUtils
 
       def papers_query(bh)
         <<~SPARQL_PAPERS
-          SELECT  ?title ?url
+          SELECT  ?title ?url ?date
           FROM    <https://BioHackrXiv.org/graph>
           WHERE   {
             ?bh schema:name "#{bh}" .
             ?url bhx:Event ?bh ;
+              dc:date ?date ;
               dc:title ?title .
-          }
+          } ORDER BY ?date
         SPARQL_PAPERS
       end
 
