@@ -81,7 +81,7 @@ module BHXIVUtils
         SPARQL_PAPERS
       end
 
-      def author_query(paper_url)
+      def author_query_orig(paper_url)
         <<~SPARQL_AUTHORS
           SELECT  ?author
           FROM    <https://BioHackrXiv.org/graph>
@@ -91,10 +91,24 @@ module BHXIVUtils
         SPARQL_AUTHORS
       end
 
+      def author_query(paper_url)
+        <<~SPARQL_AUTHORS
+         SELECT ?author
+          FROM    <https://BioHackrXiv.org/graph>
+          WHERE   {
+             <#{paper_url}> dc:contributor ?node .
+             ?node ?p ?author .
+           FILTER( !isUri(?author) ) .
+           BIND (xsd:integer(REPLACE(str(?p),
+           "http://www.w3.org/1999/02/22-rdf-syntax-ns#_", "")) as ?pos)
+          } order by ?pos
+        SPARQL_AUTHORS
+      end
+
       def bh_papers_list(bh)
         papers = sparql(papers_query(bh), lambda{|paper| OpenStruct.new(paper) })
         papers.each do |paper|
-          paper.authors = sparql(author_query(paper.url), lambda{|paper| paper[:author] })
+          paper.authors = sparql(author_query(paper.url), lambda{|author| author[:author] })
         end
         papers
       end

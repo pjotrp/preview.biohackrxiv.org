@@ -35,14 +35,13 @@ html[lang="en"]
                   - @papers[name].each.with_index do |paper, i|
                     - if i != 0
                       hr
-                    h3
                       a<> href="#{paper.url}"
                         = paper.title
-                        | &nbsp;(
-                        = paper.date
-                        | )
-                    p
+                      | &nbsp;&mdash;&nbsp;by&nbsp;
                       == paper.authors.join(", ")
+                      | &nbsp;(
+                      == paper.date
+                      | )
 
       footer
         p
