@@ -87,7 +87,11 @@ class BHXIV < Sinatra::Base
   end
 
   get '/' do
-    # raise CommandError, "TESTING ERRORS!\nHello"
+    @biohackathons = BHXIVUtils::PaperList.biohackathon_events()
+    @papers = Hash[@biohackathons.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
+    @count_events = @biohackathons.length
+    @count_papers = @papers.map { |k,v| v }.flatten.length
+    @count_authors = BHXIVUtils::PaperList.count_authors()
     slim :index
   end
 
