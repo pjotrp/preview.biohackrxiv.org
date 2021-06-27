@@ -41,16 +41,15 @@ html[lang="en"]
                   a<> href="#{info[:url]}"
                     = info[:descr]
                 ol
-                  - @papers[name].each.with_index do |paper, i|
-                    - if i != 0
-                      hr
-                      a<> href="#{paper.url}"
-                        = paper.title
-                      | &nbsp;&mdash;&nbsp;by&nbsp;
-                      == paper.authors.join(", ")
-                      | &nbsp;(
-                      == paper.date
-                      | )
+                  - @papers[name].each do |paper|
+                    hr
+                    a<> href="#{paper.url}"
+                      = paper.title
+                    | &nbsp;&mdash;&nbsp;by&nbsp;
+                    == paper.authors.join(", ")
+                    | &nbsp;(
+                    == paper.date
+                    | )
 
       footer
         p
