@@ -44,11 +44,12 @@ module BHXIVUtils
 
       def bh_events_list
         events_query = <<~SPARQL_EVENTS
-          SELECT  ?url ?name ?descr
+          SELECT  ?url ?name ?date ?descr
           FROM    <https://BioHackrXiv.org/graph>
           WHERE   {
-           ?url schema:name ?name .
-           ?url schema:description ?descr
+           ?url schema:name ?name ;
+                dc:date ?date ;
+                schema:description ?descr
           }
         SPARQL_EVENTS
         sparql(events_query)
@@ -58,11 +59,13 @@ module BHXIVUtils
         biohackathons = {}
         bh_events_list.each do |rec|
           biohackathons[rec[:name]] = {
+            name: rec[:name],
             url: rec[:url],
+            date: rec[:date],
             descr: rec[:descr]
           }
         end
-        biohackathons
+        biohackathons.sort_by { |name, rec| rec[:date] }.reverse.to_h
       end
 
       def papers_query(bh)
