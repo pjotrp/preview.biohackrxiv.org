@@ -112,6 +112,25 @@ module BHXIVUtils
         end
         papers
       end
+
+      def count_papers()
+      end
+
+      def count_authors()
+        sparql(
+        <<~SPARQL
+SELECT DISTINCT count(?author) as ?num
+ FROM    <https://BioHackrXiv.org/graph>
+ WHERE   {
+    ?paper dc:contributor ?node .
+    ?node ?p ?author .
+  FILTER( !isUri(?author) ) .
+
+ }
+SPARQL
+        # ,lambda{|r| r[:num] })
+        )[0][:num].to_i
+      end
     end
   end
 end

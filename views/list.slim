@@ -12,10 +12,19 @@ html[lang="en"]
           a[href="http://preview.biohackrxiv.org/"]
             | preview.biohackrxiv.org
         p
-          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences
+          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences &mdash; &nbsp;
+          b
+            = @count_events
+          | &nbsp; events and &nbsp;
+          b
+            = @count_papers
+          | &nbsp; publications by &nbsp;
+          b
+            = @count_authors
+          | &nbsp; authors
         p.view
           a[href="https://github.com/biohackrxiv"]
-            | View My GitHub Profile
+            | View GitHub Profile
       section
         div
           h1
