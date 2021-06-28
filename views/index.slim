@@ -3,8 +3,6 @@ html[lang="en"]
     title
       | BioHackrXiv preview service
     link[rel="stylesheet" href="https://pages-themes.github.io/minimal/assets/css/style.css" type="text/css"]
-    style
-      |  footer { display: none; }
   body
     .wrapper
       header
@@ -25,6 +23,8 @@ html[lang="en"]
         p
           | See the list of
           a<> href="/list" published papers
+          | or
+          a<> href="/list.json" JSON
         p.view
           a[href="https://github.com/biohackrxiv"]
             | View GitHub Profile
@@ -86,8 +86,12 @@ html[lang="en"]
                     |  Bioinformatics Community Conference 2020 CollaborationFest (CoFest)
                 div
                   radio
-                    input[type="radio" name="journal" value="BH20EU" checked="1"]
+                    input[type="radio" name="journal" value="BH20EU"]
                     |  BioHackathon Europe 2020 Online
+                div
+                  radio
+                    input[type="radio" name="journal" value="BH21EU" checked="1"]
+                    |  BioHackathon Europe, Barcelona, Spain, 2021
                 div
                   radio
                     input[type="radio" name="journal" value="Other"]
@@ -107,6 +111,7 @@ html[lang="en"]
       footer
         p
           small
-            | Hosted on GitHub Pages — Theme by
-            a[href="https://github.com/orderedlist"]
-              | orderedlist
+          | By&nbsp;
+          a[href="https://thebird.nl/"] Pjotr Prins
+          | , Tazro Ohta and the rest of the&nbsp;
+          a[href="https://github.com/biohackrxiv"] BioHackrXiv team

@@ -81,16 +81,6 @@ module BHXIVUtils
         SPARQL_PAPERS
       end
 
-      def author_query_orig(paper_url)
-        <<~SPARQL_AUTHORS
-          SELECT  ?author
-          FROM    <https://BioHackrXiv.org/graph>
-          WHERE   {
-            <#{paper_url}> dc:contributor ?author
-          }
-        SPARQL_AUTHORS
-      end
-
       def author_query(paper_url)
         <<~SPARQL_AUTHORS
          SELECT ?author
@@ -107,13 +97,20 @@ module BHXIVUtils
 
       def bh_papers_list(bh)
         papers = sparql(papers_query(bh), lambda{|paper| OpenStruct.new(paper) })
-        papers.each do |paper|
-          paper.authors = sparql(author_query(paper.url), lambda{|author| author[:author] })
-        end
         papers
       end
 
-      def count_papers()
+      def all_papers(bhs)
+        Hash[bhs.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
+      end
+
+      def expand_authors(papers)
+        papers.each do |event,list|
+          list.each do | paper |
+            paper.authors = sparql(author_query(paper.url), lambda{|author| author[:author] })
+          end
+        end
+        papers
       end
 
       def count_authors()
@@ -130,6 +127,25 @@ SELECT DISTINCT count(?author) as ?num
 SPARQL
         # ,lambda{|r| r[:num] })
         )[0][:num].to_i
+      end
+
+      # Return record ready for JSON
+      def to_h(events, papers, event=:all)
+        h = {}
+
+        events.each_pair do |name, info|
+          if !papers[name].empty?
+            h[name] = {
+              event: name,
+              descr: info[:descr]
+            }
+            h[name]['papers'] = []
+            papers[name].each do |paps|
+              h[name]['papers'].push paps.to_h
+            end
+          end
+        end
+        h
       end
     end
   end

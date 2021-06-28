@@ -1,6 +1,7 @@
 $LOAD_PATH << __dir__
 
 require 'sinatra'
+# require 'sinatra/json'
 require 'slim'
 require 'securerandom'
 require 'lib/list'
@@ -120,9 +121,20 @@ class BHXIV < Sinatra::Base
     end
   end
 
+  get '/list.json' do
+    content_type :json
+    events = BHXIVUtils::PaperList.biohackathon_events
+    papers = BHXIVUtils::PaperList.all_papers(events)
+    papers = BHXIVUtils::PaperList.expand_authors(papers)
+    h = BHXIVUtils::PaperList.to_h(events,papers)
+    JSON(h)
+  end
+
   get '/list' do
     @biohackathons = BHXIVUtils::PaperList.biohackathon_events()
     @papers = Hash[@biohackathons.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
+    # expand authors (we could have done this more lazily)
+    @papers = BHXIVUtils::PaperList.expand_authors(@papers)
     @count_events = @biohackathons.length
     @count_papers = @papers.map { |k,v| v }.flatten.length
     @count_authors = BHXIVUtils::PaperList.count_authors()

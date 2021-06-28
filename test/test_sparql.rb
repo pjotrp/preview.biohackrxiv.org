@@ -36,7 +36,7 @@ AUTHORQ
     print("Loading events...\n")
     @@biohackathons = BHXIVUtils::PaperList.biohackathon_events
     print("Loading papers...\n")
-    @@papers = Hash[@@biohackathons.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
+    @@papers = BHXIVUtils::PaperList.all_papers(@@biohackathons)
     print("Done setting up\n")
   end
 
@@ -68,5 +68,21 @@ AUTHORQ
     count = BHXIVUtils::PaperList.count_authors()
     print("COUNT:",count)
     assert(count > 100)
+  end
+
+  def test_json
+    events = @@biohackathons
+    # "Elixir2019"=>
+    # {:name=>"Elixir2019",
+    # :url=>"https://2019.biohackathon-europe.org/",
+    # :date=>"2019-11-01",
+    # :descr=>"BioHackathon EUROPE, Paris, France, 2019"},
+    papers = @@papers
+    #  "Elixir2019"=>
+    #   [#<OpenStruct title="Disease and pathway maps for Rare Diseases", url="https://biohackrxiv.org/gmbjv", date="2020-07-13">,
+    papers = BHXIVUtils::PaperList.expand_authors(papers)
+    h = BHXIVUtils::PaperList.to_h(events,papers)
+    assert_equal 2,papers['Japan2019'].length
+    assert_equal ["Chris Mungall", "Hirokazu Chiba", "Shuichi Kawashima", "Yasunori Yamamoto", "Pjotr Prins", "Nada Amin", "Deepak Unni", "<nobr>William&nbsp;E.&nbsp;Byrd</nobr>"],h['Japan2019']['papers'][1][:authors]
   end
 end
