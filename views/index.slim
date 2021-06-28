@@ -3,21 +3,31 @@ html[lang="en"]
     title
       | BioHackrXiv preview service
     link[rel="stylesheet" href="https://pages-themes.github.io/minimal/assets/css/style.css" type="text/css"]
-    style
-      |  footer { display: none; }
   body
     .wrapper
       header
         h1
-          a<> href="http://preview.biohackrxiv.org/" preview.biohackrxiv.org
+          a[href="/"]
+            | preview.biohackrxiv.org
         p
-          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences
+          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences &mdash; &nbsp;
+          b
+            = @count_events
+          | &nbsp; events and &nbsp;
+          b
+            = @count_papers
+          | &nbsp; publications by &nbsp;
+          b
+            = @count_authors
+          | &nbsp; authors
         p
-          | List of
+          | See the list of
           a<> href="/list" published papers
-          | .
+          | or
+          a<> href="/list.json" JSON
         p.view
-          a<> href="https://github.com/biohackrxiv" View My GitHub Profile
+          a[href="https://github.com/biohackrxiv"]
+            | View GitHub Profile
       section
         h1
           | BioHackrXiv preview service
@@ -28,7 +38,7 @@ html[lang="en"]
         div
           p
             a<> href="https://biohackrxiv.org" BioHackrXiv
-            | currently accepts only the manuscripts from selected events and in PDF format compiled by the
+            | currently accepts manuscripts from selected events and in PDF format compiled by the
             a<> href="https://github.com/biohackrxiv/bhxiv-gen-pdf/" BioHackrXiv PDF Generator
             | . This website provides the online PDF converter which processes a Markdown format file
             code<>
@@ -76,8 +86,12 @@ html[lang="en"]
                     |  Bioinformatics Community Conference 2020 CollaborationFest (CoFest)
                 div
                   radio
-                    input[type="radio" name="journal" value="BH20EU" checked="1"]
+                    input[type="radio" name="journal" value="BH20EU"]
                     |  BioHackathon Europe 2020 Online
+                div
+                  radio
+                    input[type="radio" name="journal" value="BH21EU" checked="1"]
+                    |  BioHackathon Europe, Barcelona, Spain, 2021
                 div
                   radio
                     input[type="radio" name="journal" value="Other"]
@@ -97,6 +111,7 @@ html[lang="en"]
       footer
         p
           small
-            | Hosted on GitHub Pages — Theme by
-            a[href="https://github.com/orderedlist"]
-              | orderedlist
+          | By&nbsp;
+          a[href="https://thebird.nl/"] Pjotr Prins
+          | , Tazro Ohta and the rest of the&nbsp;
+          a[href="https://github.com/biohackrxiv"] BioHackrXiv team

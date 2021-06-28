@@ -44,11 +44,12 @@ module BHXIVUtils
 
       def bh_events_list
         events_query = <<~SPARQL_EVENTS
-          SELECT  ?url ?name ?descr
+          SELECT  ?url ?name ?date ?descr
           FROM    <https://BioHackrXiv.org/graph>
           WHERE   {
-           ?url schema:name ?name .
-           ?url schema:description ?descr
+           ?url schema:name ?name ;
+                dc:date ?date ;
+                schema:description ?descr
           }
         SPARQL_EVENTS
         sparql(events_query)
@@ -58,41 +59,93 @@ module BHXIVUtils
         biohackathons = {}
         bh_events_list.each do |rec|
           biohackathons[rec[:name]] = {
+            name: rec[:name],
             url: rec[:url],
+            date: rec[:date],
             descr: rec[:descr]
           }
         end
-        biohackathons
+        biohackathons.sort_by { |name, rec| rec[:date] }.reverse.to_h
       end
 
       def papers_query(bh)
         <<~SPARQL_PAPERS
-          SELECT  ?title ?url
+          SELECT  ?title ?url ?date
           FROM    <https://BioHackrXiv.org/graph>
           WHERE   {
             ?bh schema:name "#{bh}" .
             ?url bhx:Event ?bh ;
+              dc:date ?date ;
               dc:title ?title .
-          }
+          } ORDER BY ?date
         SPARQL_PAPERS
       end
 
       def author_query(paper_url)
         <<~SPARQL_AUTHORS
-          SELECT  ?author
+         SELECT ?author
           FROM    <https://BioHackrXiv.org/graph>
           WHERE   {
-            <#{paper_url}> dc:contributor ?author
-          }
+             <#{paper_url}> dc:contributor ?node .
+             ?node ?p ?author .
+           FILTER( !isUri(?author) ) .
+           BIND (xsd:integer(REPLACE(str(?p),
+           "http://www.w3.org/1999/02/22-rdf-syntax-ns#_", "")) as ?pos)
+          } order by ?pos
         SPARQL_AUTHORS
       end
 
       def bh_papers_list(bh)
         papers = sparql(papers_query(bh), lambda{|paper| OpenStruct.new(paper) })
-        papers.each do |paper|
-          paper.authors = sparql(author_query(paper.url), lambda{|paper| paper[:author] })
+        papers
+      end
+
+      def all_papers(bhs)
+        Hash[bhs.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
+      end
+
+      def expand_authors(papers)
+        papers.each do |event,list|
+          list.each do | paper |
+            paper.authors = sparql(author_query(paper.url), lambda{|author| author[:author] })
+          end
         end
         papers
+      end
+
+      def count_authors()
+        sparql(
+        <<~SPARQL
+SELECT DISTINCT count(?author) as ?num
+ FROM    <https://BioHackrXiv.org/graph>
+ WHERE   {
+    ?paper dc:contributor ?node .
+    ?node ?p ?author .
+  FILTER( !isUri(?author) ) .
+
+ }
+SPARQL
+        # ,lambda{|r| r[:num] })
+        )[0][:num].to_i
+      end
+
+      # Return record ready for JSON
+      def to_h(events, papers, event=:all)
+        h = {}
+
+        events.each_pair do |name, info|
+          if !papers[name].empty?
+            h[name] = {
+              event: name,
+              descr: info[:descr]
+            }
+            h[name]['papers'] = []
+            papers[name].each do |paps|
+              h[name]['papers'].push paps.to_h
+            end
+          end
+        end
+        h
       end
     end
   end

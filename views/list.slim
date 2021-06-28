@@ -9,13 +9,26 @@ html[lang="en"]
     .wrapper
       header
         h1
-          a[href="http://preview.biohackrxiv.org/"]
+          a[href="/"]
             | preview.biohackrxiv.org
         p
-          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences
+          | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences &mdash; &nbsp;
+          b
+            = @count_events
+          | &nbsp; events and &nbsp;
+          b
+            = @count_papers
+          | &nbsp; publications by &nbsp;
+          b
+            = @count_authors
+          | &nbsp; authors
+        p
+          | See the
+          a<> href="/list.json" JSON
+          |  version
         p.view
           a[href="https://github.com/biohackrxiv"]
-            | View My GitHub Profile
+            | View GitHub Profile
       section
         div
           h1
@@ -32,14 +45,15 @@ html[lang="en"]
                   a<> href="#{info[:url]}"
                     = info[:descr]
                 ol
-                  - @papers[name].each.with_index do |paper, i|
-                    - if i != 0
-                      hr
-                    h3
-                      a<> href="#{paper.url}"
-                        = paper.title
-                    p
-                      == paper.authors.join(", ")
+                  - @papers[name].each do |paper|
+                    hr
+                    a<> href="#{paper.url}"
+                      = paper.title
+                    | &nbsp;&mdash;&nbsp;by&nbsp;
+                    == paper.authors.join(", ")
+                    | &nbsp;(
+                    == paper.date
+                    | )
 
       footer
         p
