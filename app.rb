@@ -58,7 +58,7 @@ class BHXIV < Sinatra::Base
       outdir_path
     end
 
-    def gen_pdf(id, journal)
+    def gen_pdf(id, journal, git_url = nil)
       # Find paper.md
       glob = "/tmp/#{id}/**/paper.md"
       $logger.debug(glob)
@@ -71,7 +71,7 @@ class BHXIV < Sinatra::Base
       outdir = create_outdir(id)
       pdf_path = "#{outdir}/paper.pdf"
       # Generate
-      system_log("gen-pdf #{paper_dir} #{journal} #{pdf_path}")
+      system_log("gen-pdf #{paper_dir} #{journal} #{pdf_path} #{git_url}")
       # Return pdf_path      "/papers/#{id}/paper.pdf"
       "/papers/#{id}/paper.pdf"
     end
@@ -110,11 +110,12 @@ class BHXIV < Sinatra::Base
                    gen_pdf(id, journal)
                  elsif git_url
                    stage_gitrepo(id, git_url)
-                   gen_pdf(id, journal)
+                   gen_pdf(id, journal, git_url)
                  end
                end
 
     if pdf_path
+      content_type 'application/pdf' # not sure this works before a redirect, but it does not hurt
       redirect pdf_path
     else
       status 500
