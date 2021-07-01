@@ -13,7 +13,7 @@ services:
       - 9292:9292
     restart: always
   proxy:
-    image: nginx:1.17
+    image: nginx:1.21.0
     container_name: bhxiv-proxy
     depends_on:
       - app
