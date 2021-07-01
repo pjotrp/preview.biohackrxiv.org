@@ -77,6 +77,16 @@ class BHXIV < Sinatra::Base
     end
   end
 
+  configure do
+    set :events, BHXIVUtils::PaperList.biohackathon_events()
+    set :all_papers, BHXIVUtils::PaperList.all_papers(settings.events)
+    set :all_papers_expanded, BHXIVUtils::PaperList.expand_authors(settings.all_papers)
+
+    set :count_events, settings.events.length
+    set :count_papers, settings.all_papers.map { |k,v| v }.flatten.length
+    set :count_authors, BHXIVUtils::PaperList.count_authors()
+  end
+
   error CommandError do
     # 'Sorry there was a nasty error - ' + env['sinatra.error'].message
     @error_msg = env['sinatra.error'].message
@@ -88,11 +98,11 @@ class BHXIV < Sinatra::Base
   end
 
   get '/' do
-    @biohackathons = BHXIVUtils::PaperList.biohackathon_events()
-    @papers = Hash[@biohackathons.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
-    @count_events = @biohackathons.length
-    @count_papers = @papers.map { |k,v| v }.flatten.length
-    @count_authors = BHXIVUtils::PaperList.count_authors()
+    @biohackathons = settings.events
+    @papers = settings.all_papers
+    @count_events = settings.count_events
+    @count_papers = settings.count_papers
+    @count_authors = settings.count_authors
     slim :index
   end
 
@@ -124,21 +134,18 @@ class BHXIV < Sinatra::Base
 
   get '/list.json' do
     content_type :json
-    events = BHXIVUtils::PaperList.biohackathon_events
-    papers = BHXIVUtils::PaperList.all_papers(events)
-    papers = BHXIVUtils::PaperList.expand_authors(papers)
-    h = BHXIVUtils::PaperList.to_h(events,papers)
+    h = BHXIVUtils::PaperList.to_h(settings.events, settings.all_papers_expanded)
     JSON(h)
   end
 
   get '/list' do
-    @biohackathons = BHXIVUtils::PaperList.biohackathon_events()
-    @papers = Hash[@biohackathons.keys.map{|bh| [bh, BHXIVUtils::PaperList.bh_papers_list(bh)] }]
+    @biohackathons = settings.events
+    @papers = settings.all_papers
     # expand authors (we could have done this more lazily)
-    @papers = BHXIVUtils::PaperList.expand_authors(@papers)
-    @count_events = @biohackathons.length
-    @count_papers = @papers.map { |k,v| v }.flatten.length
-    @count_authors = BHXIVUtils::PaperList.count_authors()
+    @papers = settings.all_papers_expanded
+    @count_events = settings.count_events
+    @count_papers = settings.count_papers
+    @count_authors = settings.count_authors
     slim :list
   end
 end
