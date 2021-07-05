@@ -32,8 +32,6 @@ def system_log(cmd)
 end
 
 class BHXIV < Sinatra::Base
-  set :public_folder, 'public'
-
   helpers do
     def create_workdir(id)
       workdir = "/tmp/#{id}"
@@ -78,6 +76,8 @@ class BHXIV < Sinatra::Base
   end
 
   configure do
+    set :root, File.dirname(__FILE__)
+
     set :events, BHXIVUtils::PaperList.biohackathon_events()
     set :all_papers, BHXIVUtils::PaperList.all_papers(settings.events)
     set :all_papers_expanded, BHXIVUtils::PaperList.expand_authors(settings.all_papers)
