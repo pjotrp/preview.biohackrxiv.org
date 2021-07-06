@@ -7,7 +7,7 @@ html[lang="en"]
     .wrapper
       header
         h1
-          a[href="/"]
+          a[href="#{app_root}/"]
             | preview.biohackrxiv.org
         p
           | Online PDF Generator for BioHackrXiv, an OSF preprint server for BioHackathon-like events in Life Sciences &mdash; &nbsp;
@@ -22,9 +22,9 @@ html[lang="en"]
           | &nbsp; authors
         p
           | See the list of
-          a<> href="/list" published papers
+          a<> href="#{app_root}/list" published papers
           | or
-          a<> href="/list.json" JSON
+          a<> href="#{app_root}/list.json" JSON
         p.view
           a[href="https://github.com/biohackrxiv"]
             | View GitHub Profile
@@ -102,7 +102,7 @@ html[lang="en"]
                 input[type="submit" name="commit" value="Convert"]
             p
               | See also the list of
-              a<> href="/list" published papers
+              a<> href="#{app_root}/list" published papers
               | .
             p
               | Have an issue?&nbsp;
