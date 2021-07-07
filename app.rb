@@ -15,6 +15,7 @@ configure {
   set :show_exceptions, true
   set :environment, :development
   set :logging, :true
+  set :protection, :except => [:json_csrf]
 }
 
 class CommandError < StandardError
