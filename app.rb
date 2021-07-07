@@ -15,7 +15,6 @@ configure {
   set :show_exceptions, true
   set :environment, :development
   set :logging, :true
-  set :protection, :except => [:json_csrf]
 }
 
 class CommandError < StandardError
@@ -78,6 +77,7 @@ class BHXIV < Sinatra::Base
 
   configure do
     set :root, File.dirname(__FILE__)
+    set :protection, :except => [:json_csrf]
 
     set :events, BHXIVUtils::PaperList.biohackathon_events()
     set :all_papers, BHXIVUtils::PaperList.all_papers(settings.events)
