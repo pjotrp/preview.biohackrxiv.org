@@ -17,7 +17,7 @@ module BHXIVUtils
       end
 
       def sparql_endpoint_url(query)
-        base_url = "http://sparql.genenetwork.org/sparql"
+        base_url = "https://sparql.genenetwork.org/sparql"
         params = "default-graph-uri=&format=application%2Fsparql-results%2Bjson&timeout=0&debug=on&run=+Run+Query+&query=#{URI.encode_www_form_component(gen_sparql_query(query))}"
         "#{base_url}/?#{params}"
       end
