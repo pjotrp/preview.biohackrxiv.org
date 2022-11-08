@@ -18,13 +18,14 @@
 echo "# When in the container type:"
 echo "mkdir /usr/bin -p"
 echo "ln -s \$GUIX_ENVIRONMENT/bin/env /usr/bin/env"
-echo "env PATH=/bhxiv-gen-pdf/bin:\$PATH puma -t 1 -e development"
+echo "export PATH=/bhxiv-gen-pdf/bin:\$PATH"
 echo "puma -t 1 -e development"
 
 generator=$(dirname $(pwd))/bhxiv-gen-pdf
 echo $generator
 if [ ! -e $generator ]; then
   echo "Houston we have a problem"
+  exit 1
 else
 
   rm Gemfile.lock
