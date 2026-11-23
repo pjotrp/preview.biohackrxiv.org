@@ -36,9 +36,10 @@ the directory nginx should serve `public/papers` from.  Where `/var/guix` is not
 writable (so `guix shell` cannot create a profile), use a profile instead:
 
 ```
+$ mkdir -p ~/.local/share/preview          # guix will not create the directory
 $ guix package -p ~/.local/share/preview/profile -f guix.scm
 $ . ~/.local/share/preview/profile/etc/profile
-$ preview-web
+$ preview-web                              # serves 0.0.0.0:9292
 ```
 
 The comments at the top of `guix.scm` explain how the pieces fit: pandoc is
