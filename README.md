@@ -44,9 +44,15 @@ $ preview-web
 The comments at the top of `guix.scm` explain how the pieces fit: pandoc is
 Guix's own (3.7.0.2 and later - `bhxiv-gen-pdf` branches its LaTeX template on
 the pandoc version), texlive is a curated list rather than the full scheme, and
-the texlive packages are propagated because only a profile can render.  The
-renderer is taken from the sibling `bhxiv-gen-pdf` checkout until the commit
-carrying the pandoc 3 support is pushed.
+the texlive packages are propagated because only a profile can render.
+
+Both `guix.scm` and the renderer it builds are fetched from GitHub at pinned
+commits, so a build needs nothing but the file and the network.  While editing
+the service itself, point the source at the working tree:
+
+```
+$ guix build -f guix.scm --with-source=preview-biohackrxiv-org=$PWD
+```
 
 # Run with GNU Guix (older shell setup)
 

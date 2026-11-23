@@ -27,6 +27,10 @@
 ;;; list is what latex.template loads, and the check phase of bhxiv-gen-pdf
 ;;; renders example/logic to prove it is enough.
 ;;;
+;;; Both sources are git-fetches, from the fork that carries the pandoc 3 work
+;;; until it lands upstream; see the comments on %preview-commit and
+;;; %gen-pdf-commit.
+;;;
 ;;; `guix shell' needs a writable /var/guix.  On a box where that is not
 ;;; available (read-only root), the equivalent is
 ;;;
@@ -113,56 +117,31 @@
                 bash-minimal)))
 
 ;;; ---------------------------------------------------------------------------
-;;; bhxiv-gen-pdf -- the renderer, from the sibling checkout.
+;;; bhxiv-gen-pdf -- the renderer, from its own repository.
 ;;; ---------------------------------------------------------------------------
 
-;; This is the one place where a local-file is used instead of the git-fetch the
-;; rest of the file prefers, and it is temporary: the commit that makes pandoc 3
-;; work (the $if(pandoc3)$ branch in the LaTeX template, the version detection in
-;; bin/gen-pdf and resources/biohackrxiv/filters/svg-to-pdf.lua) exists only in
-;; the local checkout, not on GitHub yet.  Fetching 0a3e52e from GitHub would
-;; build the old, pandoc 2 only renderer.  Once that commit is pushed, replace
-;; %gen-pdf-source with
-;;
-;;   (origin
-;;     (method git-fetch)
-;;     (uri (git-reference
-;;           (url "https://github.com/biohackrxiv/bhxiv-gen-pdf")
-;;           (commit "192f4c8f89400e959646dc4dba2d17441c07d4ae")))
-;;     (file-name (git-file-name "bhxiv-gen-pdf" "0.0.0-1.192f4c8"))
-;;     (sha256 (base32 "…")))
-;;
-;; which also makes this package buildable without the sibling checkout.  Note
-;; that .guix-deploy in this repository already assumes the checkout is one
-;; directory up (its $generator), so the assumption is not new.
-(define %gen-pdf-root
-  (in-vicinity (dirname (dirname (current-filename)))  ;…/factory/code/jro
-               "bhxiv-gen-pdf"))
-
-(define %gen-pdf-source
-  (local-file %gen-pdf-root
-              "bhxiv-gen-pdf-checkout"
-              #:recursive? #t
-              ;; Only the checkout itself goes into the store: not its git
-              ;; database, not the store's SQLite file, not tmp/ (which is where
-              ;; .guix-deploy clones the hackathon repositories).  The paths are
-              ;; reduced to a suffix first, because an absolute path test for
-              ;; "/tmp/" would also match this checkout's own location under
-              ;; ~/tmp/.
-              #:select? (lambda (file stat)
-                          (let ((rel (string-drop file (string-length %gen-pdf-root))))
-                            (not (or (string-prefix? "/.git/" rel)
-                                     (string=? "/.git" rel)
-                                     (string-prefix? "/tmp/" rel)
-                                     (string=? "/tmp" rel)
-                                     (string-suffix? ".sqlite" rel)
-                                     (string-suffix? ".sqlite-db" rel)))))))
+;; Pinned to the commit that teaches the LaTeX template about pandoc 3 and adds
+;; the SVG filter; anything older renders with pandoc 2 only and fails against
+;; Guix's pandoc.  The fork is the URL because the commit is not in the
+;; biohackrxiv organisation's repository yet -- switch both this URL and
+;; %preview-source's when it is.
+(define %gen-pdf-commit
+  "192f4c8f89400e959646dc4dba2d17441c07d4ae")
 
 (define bhxiv-gen-pdf
   (package
     (name "bhxiv-gen-pdf")
-    (version "0.1.0")
-    (source %gen-pdf-source)
+    (version (git-version "0.1.0" "0" %gen-pdf-commit))
+    (source
+     (origin
+       (method git-fetch)
+       (uri (git-reference
+             (url "https://github.com/pjotrp/bhxiv-gen-pdf")
+             (commit %gen-pdf-commit)))
+       (file-name (git-file-name name version))
+       (sha256
+        (base32
+         "1d4mk0jalp781cjf3nvdhabx4n6hlhi7gv8lb6h5srcf24i8g0nz"))))
     (build-system copy-build-system)
     (arguments
      (list
@@ -244,20 +223,31 @@ filters.")
 ;;; The preview service itself.
 ;;; ---------------------------------------------------------------------------
 
-(define %this-directory
-  (dirname (current-filename)))
+;; Fetched rather than taken from the checkout this file lives in, so that
+;; `guix build -f guix.scm' needs nothing but this file and the network.
+;;
+;; The pin is the commit *before* the one carrying this change, which costs
+;; nothing: guix.scm is not installed, and the files that are (app.rb,
+;; config.ru, views/, lib/, config/, scripts/preview-web, the logo, nginx.conf)
+;; are identical in both.  Bump %preview-commit when any of those change; a
+;; build of the working tree is what you want while editing them:
+;;
+;;   guix build -f guix.scm --with-source=preview-biohackrxiv-org=$PWD
+;;
+;; ($PWD and not ".": --with-source rejects a source that begins with a dot.)
+(define %preview-commit
+  "26c83e629572152db9b0fd300db7bf56ac2e031a")
 
 (define %source
-  (local-file %this-directory "preview-biohackrxiv-org-checkout"
-              #:recursive? #t
-              ;; Generated things are not source: the git object database, the
-              ;; ai-memory store and the PDFs of earlier runs.
-              #:select? (lambda (file stat)
-                          (not (or (string-contains file "/.git/")
-                                   (string-suffix? "/.git" file)
-                                   (string-suffix? ".sqlite" file)
-                                   (string-suffix? ".sqlite-db" file)
-                                   (string-contains file "/public/papers/"))))))
+  (origin
+    (method git-fetch)
+    (uri (git-reference
+          (url "https://github.com/pjotrp/preview.biohackrxiv.org")
+          (commit %preview-commit)))
+    (file-name (git-file-name "preview-biohackrxiv-org" "0.1.0"))
+    (sha256
+     (base32
+      "1ya7aasihanizihs9g49fszxz52qwj6k8ykv4m52w11ymd0za4zp"))))
 
 (define preview-biohackrxiv-org
   (package
