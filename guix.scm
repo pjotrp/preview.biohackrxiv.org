@@ -78,6 +78,7 @@
         texlive-biblatex          ;the template loads it unconditionally
         texlive-booktabs          ;booktabs
         texlive-caption           ;caption
+        texlive-cjk               ;CJKutf8, for CJK runs in a paper
         texlive-colortbl          ;colortbl
         texlive-etoolbox          ;etoolbox
         texlive-fancyhdr          ;fancyhdr
@@ -89,6 +90,7 @@
         texlive-grffile           ;grffile
         texlive-hyperref          ;hyperref
         texlive-iftex             ;iftex, ifxetex, ifluatex
+        texlive-ipaex-type1       ;ipxm, the Japanese font CJK runs use
         texlive-listings          ;listings
         texlive-lm                ;lmodern
         texlive-marginnote        ;marginnote
