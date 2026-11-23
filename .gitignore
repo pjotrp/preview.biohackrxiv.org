@@ -2,3 +2,8 @@ Gemfile.lock
 tmp
 log
 public/papers
+
+# ai-memory store: local working memory, not source.  Never commit it.
+*.sqlite
+*.sqlite-*
+*.sqlite.d/
