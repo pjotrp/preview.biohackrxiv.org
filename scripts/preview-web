@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+# preview-web -- start the BioHackrXiv preview web service.
+#
+#   preview-web                                    listen on 0.0.0.0:9292
+#   PORT=8080 PREVIEW_HOST=127.0.0.1 preview-web   listen elsewhere
+#   PREVIEW_WORKDIR=/srv/preview preview-web       keep PDFs and logs there
+#
+# @APP@ is filled in by guix.scm with the installed application tree.
+#
+# The application tree in the store is read only, while the service writes to
+# its own directory: it needs tmp/ and log/, and every generated PDF lands in
+# public/papers/ before it is served.  So the tree is copied into a working
+# directory on start-up, and that directory is what nginx should serve
+# public/papers and log/ from.
+#
+# This is Ruby rather than `puma -C config/puma.rb config.ru' because of a gem
+# version clash in Guix: sinatra 3.0.5 requires rack 2.2, and the `puma'
+# command's wrapper prepends its own gem path, which carries rack 3.x for the
+# command's rackup support.  Puma requires rack before it reads the rackup file,
+# so rack 3.x gets activated first and sinatra then raises Gem::ConflictError.
+# Activating rack 2.2 here, before puma is loaded, keeps the two apart; puma
+# itself does not depend on rack.
+
+gem "rack", "~> 2.2"
+
+require "fileutils"
+
+app = "@APP@"
+workdir = ENV["PREVIEW_WORKDIR"] ||
+          File.join(ENV["XDG_STATE_HOME"] || File.join(Dir.home, ".local", "state"),
+                    "preview.biohackrxiv.org")
+host = ENV["PREVIEW_HOST"] || "0.0.0.0"
+port = Integer(ENV["PORT"] || "9292")
+
+%w[public/papers log tmp/pids].each { |d| FileUtils.mkdir_p(File.join(workdir, d)) }
+
+# Files copied out of the store are read only; the next start-up has to be able
+# to overwrite them.
+FileUtils.chmod_R("u+w", workdir)
+Dir.glob(File.join(app, "*")).each { |src| FileUtils.cp_r(src, workdir) }
+Dir.chdir(workdir)
+$LOAD_PATH.unshift(workdir)
+
+require "sinatra"
+require "slim"
+require "rack/protection"
+require "puma"
+# Loading app.rb runs its start-up self-test: one paper is rendered to prove
+# that pandoc and LaTeX work.
+require File.join(workdir, "app")
+
+server = Puma::Server.new(BHXIV.new, nil, min_threads: 0, max_threads: 16)
+server.add_tcp_listener(host, port)
+warn "preview-web: serving #{workdir} on #{host}:#{port}"
+server.run.join
