@@ -12,25 +12,20 @@
 ;;; /tmp/<uuid>, finds paper.md, and calls `gen-pdf' from PATH.  gen-pdf is a
 ;;; Ruby program in the sibling bhxiv-gen-pdf repository that renders the paper
 ;;; with pandoc and LaTeX.  So the service needs three things beyond Ruby and
-;;; its gems: the gen-pdf command, a pandoc of the right version, and a TeX
-;;; installation carrying the packages this publication template uses.
+;;; its gems: the gen-pdf command, pandoc, and a TeX installation carrying the
+;;; packages this publication template uses.
 ;;;
-;;; Two pins are deliberate, and they are the reason this file exists.
+;;; pandoc is Guix's own (3.7.0.2).  It has to be: resources/biohackrxiv/
+;;; latex.template was written for pandoc 2, and until bhxiv-gen-pdf learned to
+;;; branch on the pandoc version this file had to pin the pandoc 2.16.1 release
+;;; binary to get a PDF at all.  That branch is why nothing here pins pandoc any
+;;; more; the SVG images that pandoc 3 would hand to the LaTeX svg package (and
+;;; Inkscape) are converted with rsvg-convert by bhxiv-gen-pdf's own filter, so
+;;; no texlive-svg either.
 ;;;
-;;; * pandoc is 2.16.1, the version dockerfile.app pins.  resources/biohackrxiv/
-;;;   latex.template was written for pandoc 2: under pandoc 3 the same paper
-;;;   stops at \pandocbounded, and with that defined it stops at \citeproctext
-;;;   and then at the empty \bibliography, because pandoc 3 expects its own
-;;;   preamble definitions and a different bibliography block.  The upstream
-;;;   static binary is used rather than an older Guix package because Guix
-;;;   carries only pandoc 3.7.0.2 and rebuilding 2.x from source would need the
-;;;   whole Haskell graph at 2.x versions.  Porting the template to pandoc 3 is
-;;;   the real fix; until then this pin keeps the PDF output identical to what
-;;;   the Docker image produces.
-;;;
-;;; * texlive is a curated list, not texlive-scheme-full (several GB).  The list
-;;;   is what latex.template loads, and the check phase of bhxiv-gen-pdf renders
-;;;   example/logic to prove it is enough.
+;;; texlive is still a curated list, not texlive-scheme-full (several GB).  The
+;;; list is what latex.template loads, and the check phase of bhxiv-gen-pdf
+;;; renders example/logic to prove it is enough.
 ;;;
 ;;; `guix shell' needs a writable /var/guix.  On a box where that is not
 ;;; available (read-only root), the equivalent is
@@ -44,13 +39,13 @@
              (gnu packages bash)
              (gnu packages compression)
              (gnu packages gnome)
+             (gnu packages haskell-xyz)     ;pandoc
              (gnu packages nss)
              (gnu packages ruby)
              (gnu packages ruby-xyz)
              (gnu packages tex)
              (gnu packages version-control)
              (guix build-system copy)
-             (guix download)
              (guix gexp)
              (guix git-download)
              (guix packages)
@@ -67,41 +62,6 @@
 ;; versions in one profile is a profile collision.  So the whole file uses the
 ;; Ruby those gems were built against rather than the newest one in Guix.
 (define %ruby ruby-3.3)
-
-;;; ---------------------------------------------------------------------------
-;;; pandoc, pinned to the version the publication template expects.
-;;; ---------------------------------------------------------------------------
-
-(define pandoc-2.16.1
-  (package
-    (name "pandoc")
-    (version "2.16.1")
-    (source (origin
-              (method url-fetch)
-              (uri (string-append
-                    "https://github.com/jgm/pandoc/releases/download/"
-                    version "/pandoc-" version "-linux-amd64.tar.gz"))
-              (sha256
-               (base32
-                "192s84fqy4hfsxl7z8rk9yd17kf95dyk3fajai7rsa5gg4hx9qrz"))))
-    (build-system copy-build-system)
-    ;; The release tarball holds a statically linked binary: there is nothing to
-    ;; compile and nothing to patch, so install bin/ and pandoc's data files.
-    (arguments
-     (list #:install-plan
-           ;; unpack strips the tarball's single top directory, so the plan
-           ;; names paths relative to pandoc-2.16.1/.
-           #~'(("bin/pandoc" "bin/pandoc")
-               ("share" "share"))))
-    (home-page "https://pandoc.org/")
-    (synopsis "Document converter used to render BioHackrXiv publications")
-    (description
-     "Pandoc is a command-line tool for converting between document formats.
-This package installs the upstream static binary at the version the
-BioHackrXiv LaTeX template was written for; see the comment at the top of
-guix.scm for why the version is pinned and why the binary is used instead of
-building from source.")
-    (license license:gpl2+)))
 
 ;;; ---------------------------------------------------------------------------
 ;;; The TeX packages resources/biohackrxiv/latex.template loads.
@@ -141,113 +101,144 @@ building from source.")
         texlive-xcolor            ;xcolor
         texlive-xstring))         ;xstring
 
-;; What rendering needs at run time: the TeX trees, the pinned pandoc, and the
+;; What rendering needs at run time: the TeX trees, pandoc, and the
 ;; few command-line tools gen-pdf calls.  bhxiv-gen-pdf has these as inputs; the
 ;; service propagates them so that the profile it is installed into contains
 ;; them, because that is where Guix's texlive profile hook writes fmtutil.cnf.
 (define %renderer-runtime
   (append %texlive-packages
-          (list pandoc-2.16.1
-                librsvg
+          (list pandoc                   ;Guix's pandoc 3, see the header
+                librsvg                  ;rsvg-convert, for SVG images
                 coreutils-minimal
                 bash-minimal)))
 
 ;;; ---------------------------------------------------------------------------
-;;; bhxiv-gen-pdf -- the renderer, from its own repository.
+;;; bhxiv-gen-pdf -- the renderer, from the sibling checkout.
 ;;; ---------------------------------------------------------------------------
 
+;; This is the one place where a local-file is used instead of the git-fetch the
+;; rest of the file prefers, and it is temporary: the commit that makes pandoc 3
+;; work (the $if(pandoc3)$ branch in the LaTeX template, the version detection in
+;; bin/gen-pdf and resources/biohackrxiv/filters/svg-to-pdf.lua) exists only in
+;; the local checkout, not on GitHub yet.  Fetching 0a3e52e from GitHub would
+;; build the old, pandoc 2 only renderer.  Once that commit is pushed, replace
+;; %gen-pdf-source with
+;;
+;;   (origin
+;;     (method git-fetch)
+;;     (uri (git-reference
+;;           (url "https://github.com/biohackrxiv/bhxiv-gen-pdf")
+;;           (commit "192f4c8f89400e959646dc4dba2d17441c07d4ae")))
+;;     (file-name (git-file-name "bhxiv-gen-pdf" "0.0.0-1.192f4c8"))
+;;     (sha256 (base32 "…")))
+;;
+;; which also makes this package buildable without the sibling checkout.  Note
+;; that .guix-deploy in this repository already assumes the checkout is one
+;; directory up (its $generator), so the assumption is not new.
+(define %gen-pdf-root
+  (in-vicinity (dirname (dirname (current-filename)))  ;…/factory/code/jro
+               "bhxiv-gen-pdf"))
+
+(define %gen-pdf-source
+  (local-file %gen-pdf-root
+              "bhxiv-gen-pdf-checkout"
+              #:recursive? #t
+              ;; Only the checkout itself goes into the store: not its git
+              ;; database, not the store's SQLite file, not tmp/ (which is where
+              ;; .guix-deploy clones the hackathon repositories).  The paths are
+              ;; reduced to a suffix first, because an absolute path test for
+              ;; "/tmp/" would also match this checkout's own location under
+              ;; ~/tmp/.
+              #:select? (lambda (file stat)
+                          (let ((rel (string-drop file (string-length %gen-pdf-root))))
+                            (not (or (string-prefix? "/.git/" rel)
+                                     (string=? "/.git" rel)
+                                     (string-prefix? "/tmp/" rel)
+                                     (string=? "/tmp" rel)
+                                     (string-suffix? ".sqlite" rel)
+                                     (string-suffix? ".sqlite-db" rel)))))))
+
 (define bhxiv-gen-pdf
-  (let ((commit "0a3e52e40dcb5d5c5b49352bf194326919b6ccc8")
-        (revision "0"))
-    (package
-      (name "bhxiv-gen-pdf")
-      (version (git-version "0.0.0" revision commit))
-      (source
-       (origin
-         (method git-fetch)
-         (uri (git-reference
-               (url "https://github.com/biohackrxiv/bhxiv-gen-pdf")
-               (commit commit)))
-         (file-name (git-file-name name version))
-         (sha256
-          (base32
-           "1k66z7lxvz3xzlcz4896g6x4iz5b3f851qv9fczjax7w9ygwbgdl"))))
-      (build-system copy-build-system)
-      (arguments
-       (list
-        #:install-plan
-        #~'(;; bin/gen-pdf works out its own root by going up two directories
-           ;; from __FILE__, then loads lib/ from there and the LaTeX template,
-           ;; CSL styles and CiTO Lua filters from resources/.
-           ("bin/gen-pdf" "bin/gen-pdf")
-           ("lib" "lib")
-           ("resources" "resources")
-           ;; Kept for the preview service, which renders this example once at
-           ;; start-up to prove the toolchain works.
-           ("example" "share/bhxiv-gen-pdf/example"))
-        #:phases
-        #~(modify-phases %standard-phases
-            (add-after 'install 'wrap
-              (lambda* (#:key inputs outputs #:allow-other-keys)
-                (let ((out (assoc-ref outputs "out")))
-                  ;; pandoc, rsvg-convert (pandoc turns the SVGs of a paper into
-                  ;; PDF through it) and the coreutils gen-pdf calls come from
-                  ;; the inputs, not from whatever PATH the caller has.  A value
-                  ;; the caller already has is kept behind ours.
-                  ;;
-                  ;; LaTeX is deliberately not handled here.  pdflatex finds the
-                  ;; TeX trees through GUIX_TEXMF, and that variable has to name
-                  ;; one directory holding every tree: fmtutil.cnf and ls-R are
-                  ;; generated by a Guix *profile hook*, so a list of store
-                  ;; directories has no pdflatex.fmt and fails with "I can't find
-                  ;; the format file".  GUIX_TEXMF therefore comes from the
-                  ;; profile `guix shell -f guix.scm' builds, which is why this
-                  ;; package propagates its texlive inputs.
-                  (wrap-program (string-append out "/bin/gen-pdf")
-                    #:sh #$(file-append bash-minimal "/bin/bash")
-                    `("PATH" ":" prefix
-                      (,(string-append (assoc-ref inputs "pandoc") "/bin")
-                       ,(string-append (assoc-ref inputs "librsvg") "/bin")
-                       ,(string-append (assoc-ref inputs "coreutils") "/bin")))))))
-            (add-after 'wrap 'check-render
-              (lambda* (#:key outputs #:allow-other-keys)
-                ;; Render the example with --debug and a .tex output: that runs
-                ;; the whole pandoc pipeline -- YAML header checks, the LaTeX
-                ;; template, the CSL style and the two CiTO filters -- without
-                ;; needing a TeX installation, which only a profile can provide
-                ;; (see the comment in the wrap phase).  With --citeproc the
-                ;; citations are formatted inline, so there is no \\cite or
-                ;; \\bibitem to look for; \\bibliography comes from the Lua
-                ;; filter that turns cito-bibliography into pandoc's
-                ;; bibliography variable, and its presence is what proves the
-                ;; filter ran.
-                (let* ((out (assoc-ref outputs "out"))
-                       (example (string-append out
-                                               "/share/bhxiv-gen-pdf/example"))
-                       (tex (string-append (getcwd) "/example.tex")))
-                  (invoke (string-append out "/bin/gen-pdf")
-                          "--debug"
-                          (string-append example "/logic")
-                          tex)
-                  (call-with-input-file tex
-                    (lambda (port)
-                      (use-modules (ice-9 textual-ports))
-                      (let ((text (get-string-all port)))
-                        (unless (string-contains text "\\documentclass")
-                          (error "the LaTeX template was not applied" tex))
-                        (unless (string-contains text "\\bibliography{paper.bib}")
-                          (error "the CiTO filter did not set the bibliography"
-                                 tex)))))))))))
-      (native-inputs (list %ruby))    ;for the #!/usr/bin/env ruby shebang
-      (inputs %renderer-runtime)
-      (home-page "https://github.com/biohackrxiv/bhxiv-gen-pdf")
-      (synopsis "Render a BioHackrXiv publication from a paper.md directory")
-      (description
-       "bhxiv-gen-pdf turns a directory holding paper.md, paper.bib and images
+  (package
+    (name "bhxiv-gen-pdf")
+    (version "0.1.0")
+    (source %gen-pdf-source)
+    (build-system copy-build-system)
+    (arguments
+     (list
+      #:install-plan
+      #~'(;; bin/gen-pdf works out its own root by going up two directories
+         ;; from __FILE__, then loads lib/ from there and the LaTeX template,
+         ;; CSL styles and CiTO Lua filters from resources/.
+         ("bin/gen-pdf" "bin/gen-pdf")
+         ("lib" "lib")
+         ("resources" "resources")
+         ;; Kept for the preview service, which renders this example once at
+         ;; start-up to prove the toolchain works.
+         ("example" "share/bhxiv-gen-pdf/example"))
+      #:phases
+      #~(modify-phases %standard-phases
+          (add-after 'install 'wrap
+            (lambda* (#:key inputs outputs #:allow-other-keys)
+              (let ((out (assoc-ref outputs "out")))
+                ;; pandoc, rsvg-convert (pandoc turns the SVGs of a paper into
+                ;; PDF through it) and the coreutils gen-pdf calls come from
+                ;; the inputs, not from whatever PATH the caller has.  A value
+                ;; the caller already has is kept behind ours.
+                ;;
+                ;; LaTeX is deliberately not handled here.  pdflatex finds the
+                ;; TeX trees through GUIX_TEXMF, and that variable has to name
+                ;; one directory holding every tree: fmtutil.cnf and ls-R are
+                ;; generated by a Guix *profile hook*, so a list of store
+                ;; directories has no pdflatex.fmt and fails with "I can't find
+                ;; the format file".  GUIX_TEXMF therefore comes from the
+                ;; profile `guix shell -f guix.scm' builds, which is why this
+                ;; package propagates its texlive inputs.
+                (wrap-program (string-append out "/bin/gen-pdf")
+                  #:sh #$(file-append bash-minimal "/bin/bash")
+                  `("PATH" ":" prefix
+                    (,(string-append (assoc-ref inputs "pandoc") "/bin")
+                     ,(string-append (assoc-ref inputs "librsvg") "/bin")
+                     ,(string-append (assoc-ref inputs "coreutils") "/bin")))))))
+          (add-after 'wrap 'check-render
+            (lambda* (#:key outputs #:allow-other-keys)
+              ;; Render the example with --debug and a .tex output: that runs
+              ;; the whole pandoc pipeline -- YAML header checks, the LaTeX
+              ;; template, the CSL style and the two CiTO filters -- without
+              ;; needing a TeX installation, which only a profile can provide
+              ;; (see the comment in the wrap phase).  With --citeproc the
+              ;; citations are formatted inline, so there is no \\cite or
+              ;; \\bibitem to look for; \\bibliography comes from the Lua
+              ;; filter that turns cito-bibliography into pandoc's
+              ;; bibliography variable, and its presence is what proves the
+              ;; filter ran.
+              (let* ((out (assoc-ref outputs "out"))
+                     (example (string-append out
+                                             "/share/bhxiv-gen-pdf/example"))
+                     (tex (string-append (getcwd) "/example.tex")))
+                (invoke (string-append out "/bin/gen-pdf")
+                        "--debug"
+                        (string-append example "/logic")
+                        tex)
+                (call-with-input-file tex
+                  (lambda (port)
+                    (use-modules (ice-9 textual-ports))
+                    (let ((text (get-string-all port)))
+                      (unless (string-contains text "\\documentclass")
+                        (error "the LaTeX template was not applied" tex))
+                      (unless (string-contains text "\\bibliography{paper.bib}")
+                        (error "the CiTO filter did not set the bibliography"
+                               tex)))))))))))
+    (native-inputs (list %ruby))    ;for the #!/usr/bin/env ruby shebang
+    (inputs %renderer-runtime)
+    (home-page "https://github.com/biohackrxiv/bhxiv-gen-pdf")
+    (synopsis "Render a BioHackrXiv publication from a paper.md directory")
+    (description
+     "bhxiv-gen-pdf turns a directory holding paper.md, paper.bib and images
 into the PDF that BioHackrXiv publishes: it checks the YAML header, then runs
 pandoc with the BioHackrXiv LaTeX template, CSL style and CiTO citation
 filters.")
-      (license license:gpl3))))
+    (license license:gpl3)))
 
 ;;; ---------------------------------------------------------------------------
 ;;; The preview service itself.

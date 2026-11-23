@@ -41,8 +41,12 @@ $ . ~/.local/share/preview/profile/etc/profile
 $ preview-web
 ```
 
-The comments at the top of `guix.scm` explain the two pins (pandoc 2.16.1 and a
-curated texlive set) and why the service package propagates them.
+The comments at the top of `guix.scm` explain how the pieces fit: pandoc is
+Guix's own (3.7.0.2 and later - `bhxiv-gen-pdf` branches its LaTeX template on
+the pandoc version), texlive is a curated list rather than the full scheme, and
+the texlive packages are propagated because only a profile can render.  The
+renderer is taken from the sibling `bhxiv-gen-pdf` checkout until the commit
+carrying the pandoc 3 support is pushed.
 
 # Run with GNU Guix (older shell setup)
 
