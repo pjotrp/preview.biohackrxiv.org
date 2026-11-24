@@ -1,0 +1,60 @@
+html[lang="en"]
+  head
+    title
+      | BioHackrXiv preview
+    link[rel="stylesheet" href="https://pages-themes.github.io/minimal/assets/css/style.css" type="text/css"]
+    style
+      | body { margin: 0; }
+      | .bar { display: flex; align-items: center; gap: 1em; padding: 0.8em 1.2em; background: #f8f9fa; border-bottom: 1px solid #ddd; font-family: sans-serif; }
+      | .bar .title { font-weight: bold; }
+      | .bar .meta { color: #555; font-size: 0.9em; }
+      | .bar .spacer { flex: 1; }
+      | .btn-submit { background-color: #1a7f37; color: white; padding: 0.7em 1.4em; font-size: 1em; border: none; border-radius: 4px; cursor: pointer; }
+      | .btn-submit:hover { background-color: #15672c; }
+      | .btn-submit[disabled] { background-color: #9aa79d; cursor: not-allowed; }
+      | .btn-secondary { color: #0066cc; text-decoration: none; font-size: 0.95em; }
+      | .notice { padding: 0.8em 1.2em; font-family: sans-serif; font-size: 0.95em; }
+      | .notice.ok { background: #e8f5e8; border-bottom: 1px solid #4caf50; }
+      | .notice.warn { background: #fff8e1; border-bottom: 1px solid #ffb300; }
+      | .notice.error { background: #fdecea; border-bottom: 1px solid #d93025; }
+      | .notice a { color: #0066cc; }
+      | iframe { display: block; width: 100%; height: calc(100vh - 120px); border: 0; }
+  body
+    div.bar
+      span.title
+        | Preview
+      span.meta
+        = @paper_dir
+      span.spacer
+      a.btn-secondary href="/"
+        | Start over
+      - if @publishable && !@result
+        form method="post" action="/publish/#{@id}"
+          button.btn-submit type="submit"
+            | Submit to Zenodo
+    - if @result
+      div.notice class=(@result['action'] == 'create' ? 'ok' : 'ok')
+        - verb = (@result['action'] == 'create' ? 'Created a new record' : 'Published a new version of the existing record')
+        strong = verb
+        | &#32;—&#32;
+        a href=@result['record'] = @result['record']
+        br
+        | Concept DOI (printed on the PDF, never changes):&#32;
+        a href=@result['concept_doi_url'] = @result['concept_doi']
+        | &#32;&middot; this version's DOI:&#32;
+        a href=@result['doi_url'] = @result['doi']
+    - elsif @error
+      div.notice.error
+        strong
+          | Publishing failed:&#32;
+        = @error
+    - elsif @publishable
+      div.notice.warn
+        | Submitting deposits this preview into the Zenodo account whose token the
+        |  service is running with. Nothing has been published yet.
+    - else
+      div.notice.warn
+        | No Zenodo token is configured for this service, so this preview cannot be
+        |  submitted. Start the service with <code>ZENODO_TOKEN</code> in its
+        |  environment to enable the button.
+    iframe src="/papers/#{@id}/paper.pdf"

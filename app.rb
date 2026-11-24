@@ -60,6 +60,53 @@ class BHXIV < Sinatra::Base
       outdir_path
     end
 
+    # Where the staged paper is, so that the publish route can find it later
+    # without guessing at the uuid directory layout.
+    def staged_path(id)
+      "/tmp/#{id}/staged.json"
+    end
+
+    def remember_staged(id, paper_dir, pdf_path, git_url = nil)
+      File.write(staged_path(id), JSON.pretty_generate({
+        'id' => id,
+        'paper_dir' => paper_dir,
+        'pdf' => pdf_path,
+        'repository' => git_url,
+        'staged' => Time.now.utc.to_s
+      }))
+    end
+
+    def staged(id)
+      path = staged_path(id)
+      raise CommandError, "Nothing staged under #{id}" unless File.exist?(path)
+      JSON.parse(File.read(path))
+    end
+
+    # xiv-publish is a tool, like gen-pdf: the transport that deposits a paper.
+    # It prints its result as JSON on stdout and its progress on stderr, so the
+    # service never has to know anything about Python or the Zenodo API.
+    def submit_to_zenodo(paper_dir)
+      command = ['xiv-publish', 'submit', paper_dir, '--json']
+      $logger.debug("Invoking: #{command.join(' ')}")
+      stdout, stderr, status = Open3.capture3(*command)
+      $logger.debug(stderr)
+      raise CommandError, "xiv-publish failed: #{stderr}#{stdout}" unless status.success?
+      JSON.parse(stdout)
+    rescue JSON::ParserError => e
+      raise CommandError, "xiv-publish did not return JSON: #{e.message}"
+    end
+
+    def preview(id)
+      @id = id
+      @staged = staged(id)
+      @paper_dir = @staged['paper_dir']
+      @publishable = publishable?
+    end
+
+    def publishable?
+      !ENV['ZENODO_TOKEN'].to_s.empty?
+    end
+
     def gen_pdf(id, git_url = nil)
       # Find paper.md
       glob = "/tmp/#{id}/**/paper.md"
@@ -74,6 +121,7 @@ class BHXIV < Sinatra::Base
       pdf_path = "#{outdir}/paper.pdf"
       # Generate
       system_log("gen-pdf #{paper_dir} #{pdf_path}")
+      remember_staged(id, paper_dir, pdf_path, git_url)
       # Return pdf_path      "/papers/#{id}/paper.pdf"
       "/papers/#{id}/paper.pdf"
     end
@@ -146,11 +194,37 @@ class BHXIV < Sinatra::Base
                end
 
     if pdf_path
-      content_type 'application/pdf' # not sure this works before a redirect, but it does not hurt
-      redirect pdf_path
+      # Show the PDF in a frame with a Submit button rather than sending the PDF
+      # itself: publishing is a decision, and it belongs on the preview.
+      redirect "/papers/#{File.basename(File.dirname(pdf_path))}"
     else
       status 500
     end
+  end
+
+  get '/papers/:id' do
+    @id = params[:id]
+    preview(@id)
+    slim :paper
+  end
+
+  # Publishing runs the transport and renders the outcome on the same page.
+  # Deliberately not a redirect through a session: the answer belongs to the
+  # request that asked for it, and a half-remembered flash message is how a
+  # publish looks like it did nothing.
+  post '/publish/:id' do
+    @id = params[:id]
+    preview(@id)
+    if !publishable?
+      @error = 'This service has no ZENODO_TOKEN configured.'
+    else
+      begin
+        @result = submit_to_zenodo(@paper_dir)
+      rescue CommandError => e
+        @error = e.message
+      end
+    end
+    slim :paper
   end
 
   # Commented out while remote SPARQL server is unavailable

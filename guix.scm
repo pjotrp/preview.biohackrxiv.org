@@ -44,6 +44,8 @@
              (gnu packages compression)
              (gnu packages gnome)
              (gnu packages haskell-xyz)     ;pandoc
+             (gnu packages python)          ;xiv-publish
+             (gnu packages python-xyz)      ;python-pyyaml
              (gnu packages nss)
              (gnu packages ruby)
              (gnu packages ruby-xyz)
@@ -222,6 +224,63 @@ filters.")
     (license license:gpl3)))
 
 ;;; ---------------------------------------------------------------------------
+;;; xiv-publish -- the transport the service calls, like gen-pdf.
+;;; ---------------------------------------------------------------------------
+
+;; A local-file for the same reason as nothing else here: the repository is not
+;; published yet, so there is no commit to fetch.  When it is, replace this with
+;; a git-fetch of the same shape as bhxiv-gen-pdf's above.
+(define %xiv-publish-source
+  (local-file (in-vicinity (dirname (dirname (current-filename))) "xiv-publish")
+              "xiv-publish-checkout"
+              #:recursive? #t
+              #:select? (lambda (file stat)
+                          (let ((rel (string-drop file (string-length
+                                                        (in-vicinity
+                                                         (dirname (dirname (current-filename)))
+                                                         "xiv-publish")))))
+                            (not (or (string-prefix? "/.git/" rel)
+                                     (string=? "/.git" rel)
+                                     (string-suffix? ".sqlite" rel)
+                                     (string-suffix? ".sqlite-db" rel)
+                                     (string-prefix? "/__pycache__/" rel)))))))
+
+(define xiv-publish
+  (package
+    (name "xiv-publish")
+    (version "0.0.1")
+    (source %xiv-publish-source)
+    (build-system copy-build-system)
+    (arguments
+     (list
+      #:install-plan
+      #~'(("xiv_publish" "lib/python3.12/site-packages/xiv_publish")
+         ("bin/xiv-publish" "bin/xiv-publish"))
+      #:phases
+      #~(modify-phases %standard-phases
+          (add-after 'install 'wrap
+            (lambda* (#:key inputs outputs #:allow-other-keys)
+              (let* ((out (assoc-ref outputs "out"))
+                     (site (string-append out "/lib/python3.12/site-packages"))
+                     (python (assoc-ref inputs "python"))
+                     (yaml (assoc-ref inputs "python-pyyaml")))
+                ;; Both the package and pyyaml come from the store, so the tool
+                ;; works in an environment that has nothing else on PYTHONPATH.
+                (wrap-program (string-append out "/bin/xiv-publish")
+                  #:sh (search-input-file inputs "bin/bash")
+                  `("PYTHONPATH" ":" prefix
+                    (,site ,(string-append yaml "/lib/python3.12/site-packages")))
+                  `("PATH" ":" prefix (,(string-append python "/bin"))))))))))
+    (inputs (list python python-pyyaml bash-minimal))
+    (home-page "https://github.com/pjotrp/xiv-publish")
+    (synopsis "Deposit a BioHackrXiv paper in Zenodo")
+    (description
+     "The publishing transport: it reads a paper's YAML header, creates a Zenodo
+record or a new version of the one the paper already has, renders the paper with
+its concept DOI, uploads the PDF and its sources, and publishes.")
+    (license license:agpl3+)))
+
+;;; ---------------------------------------------------------------------------
 ;;; The preview service itself.
 ;;; ---------------------------------------------------------------------------
 
@@ -344,6 +403,7 @@ filters.")
      (append
       %renderer-runtime
       (list bhxiv-gen-pdf
+           xiv-publish
            %ruby
            ruby-sinatra
            ruby-slim
