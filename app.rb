@@ -103,6 +103,19 @@ class BHXIV < Sinatra::Base
       @publishable = publishable?
     end
 
+    def cleanup(id, pdf_path)
+      FileUtils.rm_rf("/tmp/#{id}")
+      # staged.json holds the absolute path the renderer wrote to
+      # (<workdir>/public/papers/<uuid>/paper.pdf), not the URL, so the directory
+      # to remove is its dirname -- as long as it really is inside public/.
+      served = File.dirname(pdf_path.to_s)
+      root = File.join(settings.public_folder, 'papers')
+      FileUtils.rm_rf(served) if served.start_with?(root)
+    rescue StandardError => e
+      # A leftover directory is not worth failing a successful deposit over.
+      $logger.debug("cleanup of #{id} failed: #{e.message}")
+    end
+
     def publishable?
       !ENV['ZENODO_TOKEN'].to_s.empty?
     end
@@ -220,6 +233,10 @@ class BHXIV < Sinatra::Base
     else
       begin
         @result = submit_to_zenodo(@paper_dir)
+        # The record holds the PDF now, so the staged copy and the served one are
+        # done with: that is the only thing that ever cleans them up.
+        cleanup(@id, @staged['pdf'])
+        @cleaned = true
       rescue CommandError => e
         @error = e.message
       end

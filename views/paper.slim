@@ -33,16 +33,27 @@ html[lang="en"]
           button.btn-submit type="submit"
             | Submit to Zenodo
     - if @result
-      div.notice class=(@result['action'] == 'create' ? 'ok' : 'ok')
-        - verb = (@result['action'] == 'create' ? 'Created a new record' : 'Published a new version of the existing record')
+      div.notice class=(@result['action'] == 'unchanged' ? 'warn' : 'ok')
+        - verb = case @result['action']
+        -          when 'create' then 'Created a new record'
+        -          when 'version' then 'Published a new version of the existing record'
+        -          else 'Nothing to deposit: this exact PDF is already there'
         strong = verb
         | &#32;—&#32;
         a href=@result['record'] = @result['record']
         br
         | Concept DOI (printed on the PDF, never changes):&#32;
         a href=@result['concept_doi_url'] = @result['concept_doi']
-        | &#32;&middot; this version's DOI:&#32;
-        a href=@result['doi_url'] = @result['doi']
+        - if @result['doi_url']
+          | &#32;&middot; this version's DOI:&#32;
+          a href=@result['doi_url'] = @result['doi']
+        - if @result['action'] == 'unchanged'
+          br
+          | Deposited #{@result['submitted_at']}, so the PDF did not change. Edit the
+          |  paper and preview it again to submit a new version.
+        - if @cleaned
+          br
+          | The local copy of the preview has been removed; the PDF lives at the record.
     - elsif @error
       div.notice.error
         strong
@@ -57,4 +68,9 @@ html[lang="en"]
         | No Zenodo token is configured for this service, so this preview cannot be
         |  submitted. Start the service with <code>ZENODO_TOKEN</code> in its
         |  environment to enable the button.
-    iframe src="/papers/#{@id}/paper.pdf"
+    - if @cleaned
+      div.notice
+        | This preview has been deposited and cleaned up. Start over to preview
+        |  another paper.
+    - else
+      iframe src="/papers/#{@id}/paper.pdf"
