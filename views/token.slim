@@ -1,0 +1,67 @@
+html[lang="en"]
+  head
+    title
+      | BioHackrXiv preview — submit to Zenodo
+    link[rel="stylesheet" href="https://pages-themes.github.io/minimal/assets/css/style.css" type="text/css"]
+    style
+      | body { font-family: sans-serif; }
+      | .wrap { max-width: 46em; margin: 2em auto; padding: 0 1em; }
+      | h2 { margin-top: 0; }
+      | .box { background: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; padding: 1.2em 1.5em; }
+      | .box ol { margin: 0.5em 0 0.5em 1.2em; }
+      | .box li { margin: 0.5em 0; line-height: 1.45; }
+      | code { background: #eef2f7; padding: 0.15em 0.35em; border-radius: 3px; }
+      | label { display: block; font-weight: bold; margin: 1.5em 0 0.4em; }
+      | input[type="password"] { width: 100%; padding: 0.7em; font-size: 1em; border: 1px solid #bbb; border-radius: 4px; font-family: monospace; }
+      | .btn-submit { background-color: #1a7f37; color: white; padding: 0.8em 1.6em; font-size: 1.05em; border: none; border-radius: 4px; cursor: pointer; margin-top: 1.2em; }
+      | .btn-submit:hover { background-color: #15672c; }
+      | .back { margin-top: 1.5em; font-size: 0.95em; }
+      | .back a { color: #0066cc; text-decoration: none; }
+      | .warn { background: #fff8e1; border-left: 4px solid #ffb300; padding: 0.8em 1em; margin: 1.2em 0; font-size: 0.95em; }
+      | .error { background: #fdecea; border-left: 4px solid #d93025; padding: 0.8em 1em; margin: 1.2em 0; font-family: monospace; white-space: pre-wrap; }
+  body
+    .wrap
+      h2
+        | Submit this paper to Zenodo
+      p
+        | Depositing needs a Zenodo personal access token: the record is created in
+        |  <em>your</em> Zenodo account, so the token has to be yours. It is used once,
+        |  for this one submission, and it is not stored anywhere by this service.
+      - if @error
+        .error
+          = @error
+      .box
+        h3
+          | How to make a token
+        ol
+          li
+            | Open
+            a<> href="https://zenodo.org/account/settings/applications/tokens/new" zenodo.org → Settings → Applications → Personal access tokens → New token
+            | . For a test run use
+            a<> href="https://sandbox.zenodo.org/" sandbox.zenodo.org
+            | instead — it has separate accounts and test DOIs.
+          li
+            | Give it a name you will recognise, such as <code>BioHackrXiv preview</code>.
+          li
+            | Tick the scopes <code>deposit:write</code> (create and fill a record) and
+            |  <code>deposit:actions</code> (publish it).
+          li
+            | Create it and copy the token: Zenodo shows it once.
+      .warn
+        strong
+          | What happens with it:&#32;
+        | the token is handed to the deposit tool for the length of this request only.
+        |  It is not written to a file, not put in a cookie, not kept in the database
+        |  and not logged. Once the record is published the token can be revoked in
+        |  the same Zenodo settings page.
+      form method="post" action="/publish/#{@id}" autocomplete="off"
+        label for="token"
+          | Your Zenodo personal access token
+        input#token[name="token" type="password" autocomplete="off" spellcheck="false" required="required" placeholder="paste the token here"]
+        div
+          button.btn-submit type="submit"
+            | Submit to Zenodo
+      .back
+        a href="/papers/#{@id}"
+          | ← back to the preview
+        | &#32;· nothing has been deposited yet

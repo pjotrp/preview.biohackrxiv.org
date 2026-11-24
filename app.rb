@@ -12,7 +12,10 @@ $logger.level = Logger::DEBUG
 
 configure {
   set :server, :puma
-  set :show_exceptions, true
+  # :after_handler runs the `error` handlers below and only falls back to
+  # Sinatra's stack-trace page when none matches -- with `true`, a readable
+  # CommandError was shown as a Ruby backtrace.
+  set :show_exceptions, :after_handler
   set :environment, :development
   set :logging, :true
 }
@@ -41,12 +44,6 @@ class BHXIV < Sinatra::Base
       workdir = "/tmp/#{id}"
       FileUtils.mkdir(workdir)
       workdir
-    end
-
-    def stage_zipfile(id, zipfile)
-      workdir = create_workdir(id)
-      filepath = zipfile[:tempfile].path
-      system_log("unzip #{filepath} -d #{workdir}")
     end
 
     def stage_gitrepo(id, git_url)
@@ -85,10 +82,26 @@ class BHXIV < Sinatra::Base
     # xiv-publish is a tool, like gen-pdf: the transport that deposits a paper.
     # It prints its result as JSON on stdout and its progress on stderr, so the
     # service never has to know anything about Python or the Zenodo API.
-    def submit_to_zenodo(paper_dir)
-      command = ['xiv-publish', 'submit', paper_dir, '--json']
+    # The deposit runs with the caller's token in its environment and nothing
+    # else: it is not written to a file, not kept in a cookie or the database, and
+    # not logged -- only the command is, and the token is not in it.
+    def submit_to_zenodo(staged_paper, token)
+      command = ['xiv-publish', 'submit', staged_paper['paper_dir'], '--json']
+      # The repository URL is the authoritative address of the paper: it is what
+      # the submitter handed over, where the git_url in the paper's own header is
+      # a claim the author can leave stale.
+      # A repository URL is the authoritative address; anything else (a local
+      # path, an ssh remote) is provenance rather than an address a reader can
+      # follow, so it is recorded as where it came from instead.
+      repository = staged_paper['repository'].to_s
+      if repository.match?(%r{\A(https?://|git@)})
+        command += ['--repo-url', repository]
+      elsif !repository.empty?
+        command += ['--source', "repo:#{repository}"]
+      end
       $logger.debug("Invoking: #{command.join(' ')}")
-      stdout, stderr, status = Open3.capture3(*command)
+      stdout, stderr, status = Open3.capture3({'ZENODO_TOKEN' => token}, *command)
+      # stderr can carry an API error message; it never carries the token.
       $logger.debug(stderr)
       raise CommandError, "xiv-publish failed: #{stderr}#{stdout}" unless status.success?
       JSON.parse(stdout)
@@ -100,7 +113,6 @@ class BHXIV < Sinatra::Base
       @id = id
       @staged = staged(id)
       @paper_dir = @staged['paper_dir']
-      @publishable = publishable?
     end
 
     def cleanup(id, pdf_path)
@@ -114,10 +126,6 @@ class BHXIV < Sinatra::Base
     rescue StandardError => e
       # A leftover directory is not worth failing a successful deposit over.
       $logger.debug("cleanup of #{id} failed: #{e.message}")
-    end
-
-    def publishable?
-      !ENV['ZENODO_TOKEN'].to_s.empty?
     end
 
     def gen_pdf(id, git_url = nil)
@@ -190,21 +198,27 @@ class BHXIV < Sinatra::Base
   end
 
   post '/gen-pdf' do
-    # Get form parameters
+    # Only a repository URL is accepted: a paper is deposited from a repository,
+    # so that the record can name it and a later submission can find it again.
     $logger.debug(params)
-    git_url = params[:repository]
-    zipfile = params[:zipfile]
+    git_url = params[:repository].to_s.strip
+    if git_url.empty?
+      status 400
+      @error_msg = 'Please provide the URL of the repository that holds your paper.md. ' \
+                   'A paper is deposited from its repository, so that the record can ' \
+                   'name it and a later submission can find it again.'
+      halt slim(:error)
+    end
 
-    pdf_path = if zipfile || git_url
-                 id = SecureRandom.uuid
-                 if zipfile
-                   stage_zipfile(id, zipfile)
-                   gen_pdf(id)
-                 elsif git_url
-                   stage_gitrepo(id, git_url)
-                   gen_pdf(id, git_url)
-                 end
-               end
+    id = SecureRandom.uuid
+    begin
+      stage_gitrepo(id, git_url)
+      pdf_path = gen_pdf(id, git_url)
+    rescue CommandError => e
+      status 502
+      @error_msg = e.message
+      halt slim(:error)
+    end
 
     if pdf_path
       # Show the PDF in a frame with a Submit button rather than sending the PDF
@@ -221,6 +235,14 @@ class BHXIV < Sinatra::Base
     slim :paper
   end
 
+  # The deposit asks for the caller's Zenodo token first: the record belongs in
+  # their account, and this service has no business holding a token of its own.
+  get '/papers/:id/submit' do
+    @id = params[:id]
+    preview(@id)
+    slim :token
+  end
+
   # Publishing runs the transport and renders the outcome on the same page.
   # Deliberately not a redirect through a session: the answer belongs to the
   # request that asked for it, and a half-remembered flash message is how a
@@ -228,18 +250,19 @@ class BHXIV < Sinatra::Base
   post '/publish/:id' do
     @id = params[:id]
     preview(@id)
-    if !publishable?
-      @error = 'This service has no ZENODO_TOKEN configured.'
-    else
-      begin
-        @result = submit_to_zenodo(@paper_dir)
-        # The record holds the PDF now, so the staged copy and the served one are
-        # done with: that is the only thing that ever cleans them up.
-        cleanup(@id, @staged['pdf'])
-        @cleaned = true
-      rescue CommandError => e
-        @error = e.message
-      end
+    token = params[:token].to_s.strip
+    if token.empty?
+      @error = 'A Zenodo personal access token is needed to deposit this paper.'
+      halt slim(:token)
+    end
+    begin
+      @result = submit_to_zenodo(@staged, token)
+      # The record holds the PDF now, so the staged copy and the served one are
+      # done with: that is the only thing that ever cleans them up.
+      cleanup(@id, @staged['pdf'])
+      @cleaned = true
+    rescue CommandError => e
+      @error = e.message
     end
     slim :paper
   end

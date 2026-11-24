@@ -130,7 +130,7 @@
 ;; biohackrxiv organisation's repository yet -- switch both this URL and
 ;; %preview-source's when it is.
 (define %gen-pdf-commit
-  "cebc898935f57558e08580f9beeadf640fc08702")
+  "d9655ad9ce689ffa3bc831bd7dd54a830fd01a82")
 
 (define bhxiv-gen-pdf
   (package
@@ -145,7 +145,7 @@
        (file-name (git-file-name name version))
        (sha256
         (base32
-         "169yimzjqncj7cgcf0d6asx1fy1v71iyz93sh8mxswl6lnrdk0fp"))))
+         "0lc79akxzx1ba78pa74ns0ai665vcpq15hjsxiaf8ppy8jy1lrbx"))))
     (build-system copy-build-system)
     (arguments
      (list

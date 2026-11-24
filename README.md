@@ -31,6 +31,37 @@ $ PORT=8080 PREVIEW_HOST=127.0.0.1 preview-web
 $ PREVIEW_WORKDIR=/srv/preview preview-web   # where generated PDFs and logs go
 ```
 
+Only a **repository URL** is accepted.  A zip upload used to be the other way
+in, and it was dropped: a paper is deposited from a repository, so that the
+record can name the repository it came from and a later submission of the same
+paper can be recognised as a new version of the same record rather than as a
+different paper.  The URL is passed to the transport (`xiv-publish submit …
+--repo-url …`), which records it with the version as the authoritative address
+of the submission — the `git_url` in the paper's own header is a claim the
+author can leave stale.
+
+After a successful render the PDF is shown in a page with a **Submit to Zenodo**
+link, which leads to a screen asking for **your own Zenodo personal access
+token** — the record is created in your account, so the token has to be yours.
+That screen explains how to make one (Zenodo → Settings → Applications →
+Personal access tokens → New token, with the scopes `deposit:write` and
+`deposit:actions`), and the deposit runs when its button is pressed.  The token
+is handed to the transport in the child process's environment for that one
+request: not written to a file, not kept in a cookie or the database, not
+logged, and it can be revoked on the same Zenodo page afterwards.  The service
+itself therefore needs **no token of its own**, and there is no way to deposit by
+pressing a button twice in a row without one.
+
+The deposit creates a record the first time and a new version of the same concept
+record afterwards, then deletes the staged copy.
+
+One thing this does not solve yet: with per-author tokens, papers deposited by
+different people land in different Zenodo accounts, and the submissions database
+records the record id and DOI without recording *whose* account holds it.  The
+paper's identity (repository URL plus title) is still right; ownership is not
+recorded, so "this paper has a record" means "a record exists somewhere", not
+"our record".
+
 `PREVIEW_WORKDIR` defaults to `$XDG_STATE_HOME/preview.biohackrxiv.org`; that is
 the directory nginx should serve `public/papers` from.  Where `/var/guix` is not
 writable (so `guix shell` cannot create a profile), use a profile instead:

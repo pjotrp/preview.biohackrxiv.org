@@ -24,14 +24,13 @@ html[lang="en"]
       span.title
         | Preview
       span.meta
-        = @paper_dir
+        = @staged['repository'] || @staged['source'] || @paper_dir
       span.spacer
       a.btn-secondary href="/"
         | Start over
-      - if @publishable && !@result
-        form method="post" action="/publish/#{@id}"
-          button.btn-submit type="submit"
-            | Submit to Zenodo
+      - if !@result && !@error
+        a.btn-submit href="/papers/#{@id}/submit"
+          | Submit to Zenodo
     - if @result
       div.notice class=(@result['action'] == 'unchanged' ? 'warn' : 'ok')
         - verb = case @result['action']
@@ -59,15 +58,10 @@ html[lang="en"]
         strong
           | Publishing failed:&#32;
         = @error
-    - elsif @publishable
-      div.notice.warn
-        | Submitting deposits this preview into the Zenodo account whose token the
-        |  service is running with. Nothing has been published yet.
     - else
       div.notice.warn
-        | No Zenodo token is configured for this service, so this preview cannot be
-        |  submitted. Start the service with <code>ZENODO_TOKEN</code> in its
-        |  environment to enable the button.
+        | Submitting asks for your Zenodo personal access token and deposits the
+        |  paper into <em>your</em> account. Nothing has been published yet.
     - if @cleaned
       div.notice
         | This preview has been deposited and cleaned up. Start over to preview
